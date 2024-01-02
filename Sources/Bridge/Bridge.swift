@@ -176,14 +176,14 @@ extension Bid {
     }
 }
 
-struct Deal {
+struct Deal : Codable {
     var north: Holding
     var east: Holding
     var south: Holding
     var west: Holding
 }
 
-struct DealState {
+struct DealState : Codable {
     var deal: Deal
     var play: [Card]
     var bidding: [Bid]
