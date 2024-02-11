@@ -1,6 +1,7 @@
 // The Swift Programming Language
 // https://docs.swift.org/swift-book
 public let ranks: [String] = ["2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K", "A"]
+public let strains: [String] = ["C", "D", "H", "S", "N"]
 
 public typealias Holding = UInt64
 public let DECK: Holding = 4503599627370495
@@ -12,6 +13,64 @@ public let ACES: Holding = 2252074725150720
 public let KINGS: Holding = 1126037362575360
 public let QUEENS: Holding = 563018681287680
 public let JACKS: Holding = 281509340643840
+
+public let HOLDING_TWO_OF_CLUBS:    Holding = 1 << 0
+public let HOLDING_THREE_OF_CLUBS:  Holding = 1 << 1
+public let HOLDING_FOUR_OF_CLUBS:   Holding = 1 << 2
+public let HOLDING_FIVE_OF_CLUBS:   Holding = 1 << 3
+public let HOLDING_SIX_OF_CLUBS:    Holding = 1 << 4
+public let HOLDING_SEVEN_OF_CLUBS:  Holding = 1 << 5
+public let HOLDING_EIGHT_OF_CLUBS:  Holding = 1 << 6
+public let HOLDING_NINE_OF_CLUBS:   Holding = 1 << 7
+public let HOLDING_TEN_OF_CLUBS:    Holding = 1 << 8
+public let HOLDING_JACK_OF_CLUBS:   Holding = 1 << 9
+public let HOLDING_QUEEN_OF_CLUBS:  Holding = 1 << 10
+public let HOLDING_KING_OF_CLUBS:   Holding = 1 << 11
+public let HOLDING_ACE_OF_CLUBS:    Holding = 1 << 12
+
+public let HOLDING_TWO_OF_DIAMONDS:    Holding = 1 << 13
+public let HOLDING_THREE_OF_DIAMONDS:  Holding = 1 << 14
+public let HOLDING_FOUR_OF_DIAMONDS:   Holding = 1 << 15
+public let HOLDING_FIVE_OF_DIAMONDS:   Holding = 1 << 16
+public let HOLDING_SIX_OF_DIAMONDS:    Holding = 1 << 17
+public let HOLDING_SEVEN_OF_DIAMONDS:  Holding = 1 << 18
+public let HOLDING_EIGHT_OF_DIAMONDS:  Holding = 1 << 19
+public let HOLDING_NINE_OF_DIAMONDS:   Holding = 1 << 20
+public let HOLDING_TEN_OF_DIAMONDS:    Holding = 1 << 21
+public let HOLDING_JACK_OF_DIAMONDS:   Holding = 1 << 22
+public let HOLDING_QUEEN_OF_DIAMONDS:  Holding = 1 << 23
+public let HOLDING_KING_OF_DIAMONDS:   Holding = 1 << 24
+public let HOLDING_ACE_OF_DIAMONDS:    Holding = 1 << 25
+
+public let HOLDING_TWO_OF_HEARTS:    Holding = 1 << 26
+public let HOLDING_THREE_OF_HEARTS:  Holding = 1 << 27
+public let HOLDING_FOUR_OF_HEARTS:   Holding = 1 << 28
+public let HOLDING_FIVE_OF_HEARTS:   Holding = 1 << 29
+public let HOLDING_SIX_OF_HEARTS:    Holding = 1 << 30
+public let HOLDING_SEVEN_OF_HEARTS:  Holding = 1 << 31
+public let HOLDING_EIGHT_OF_HEARTS:  Holding = 1 << 32
+public let HOLDING_NINE_OF_HEARTS:   Holding = 1 << 33
+public let HOLDING_TEN_OF_HEARTS:    Holding = 1 << 34
+public let HOLDING_JACK_OF_HEARTS:   Holding = 1 << 35
+public let HOLDING_QUEEN_OF_HEARTS:  Holding = 1 << 36
+public let HOLDING_KING_OF_HEARTS:   Holding = 1 << 37
+public let HOLDING_ACE_OF_HEARTS:    Holding = 1 << 38
+
+public let HOLDING_TWO_OF_SPADES:    Holding = 1 << 39
+public let HOLDING_THREE_OF_SPADES:  Holding = 1 << 40
+public let HOLDING_FOUR_OF_SPADES:   Holding = 1 << 41
+public let HOLDING_FIVE_OF_SPADES:   Holding = 1 << 42
+public let HOLDING_SIX_OF_SPADES:    Holding = 1 << 43
+public let HOLDING_SEVEN_OF_SPADES:  Holding = 1 << 44
+public let HOLDING_EIGHT_OF_SPADES:  Holding = 1 << 45
+public let HOLDING_NINE_OF_SPADES:   Holding = 1 << 46
+public let HOLDING_TEN_OF_SPADES:    Holding = 1 << 47
+public let HOLDING_JACK_OF_SPADES:   Holding = 1 << 48
+public let HOLDING_QUEEN_OF_SPADES:  Holding = 1 << 49
+public let HOLDING_KING_OF_SPADES:   Holding = 1 << 50
+public let HOLDING_ACE_OF_SPADES:    Holding = 1 << 51
+
+
 
 public typealias Strain = UInt8
 public let STRAIN_CLUB: Strain = 1
@@ -33,7 +92,7 @@ public let BID_PASS: Bid = 0
 public let BID_DOUBLE: Bid = 1
 public let BID_REDOUBLE: Bid = 2
 public let BID_NONE: Bid = 3
-public let BID_1_CLUBS: Bid = 33
+public let BID_1_CLUBS: Bid = 33        // level << 6 + suit
 public let BID_2_CLUBS: Bid = 65
 public let BID_3_CLUBS: Bid = 97
 public let BID_4_CLUBS: Bid = 129
@@ -85,58 +144,171 @@ public let MODIFIER_DOUBLED: Modifier = 1
 public let MODIFIER_REDOUBLED: Modifier = 2
 
 public typealias Card = UInt8
-public let CARD_TWO_OF_CLUBS: Card = 0
-public let CARD_THREE_OF_CLUBS: Card = 1
-public let CARD_FOUR_OF_CLUBS: Card = 2
-public let CARD_FIVE_OF_CLUBS: Card = 3
-public let CARD_SIX_OF_CLUBS: Card = 4
-public let CARD_SEVEN_OF_CLUBS: Card = 5
-public let CARD_EIGHT_OF_CLUBS: Card = 6
-public let CARD_NINE_OF_CLUBS: Card = 7
-public let CARD_TEN_OF_CLUBS: Card = 8
-public let CARD_JACK_OF_CLUBS: Card = 9
-public let CARD_QUEEN_OF_CLUBS: Card = 10
-public let CARD_KING_OF_CLUBS: Card = 11
-public let CARD_ACE_OF_CLUBS: Card = 12
-public let CARD_TWO_OF_DIAMONDS: Card = 13
-public let CARD_THREE_OF_DIAMONDS: Card = 14
-public let CARD_FOUR_OF_DIAMONDS: Card = 15
-public let CARD_FIVE_OF_DIAMONDS: Card = 16
-public let CARD_SIX_OF_DIAMONDS: Card = 17
-public let CARD_SEVEN_OF_DIAMONDS: Card = 18
-public let CARD_EIGHT_OF_DIAMONDS: Card = 19
-public let CARD_NINE_OF_DIAMONDS: Card = 20
-public let CARD_TEN_OF_DIAMONDS: Card = 21
-public let CARD_JACK_OF_DIAMONDS: Card = 22
-public let CARD_QUEEN_OF_DIAMONDS: Card = 23
-public let CARD_KING_OF_DIAMONDS: Card = 24
-public let CARD_ACE_OF_DIAMONDS: Card = 25
-public let CARD_TWO_OF_HEARTS: Card = 26
-public let CARD_THREE_OF_HEARTS: Card = 27
-public let CARD_FOUR_OF_HEARTS: Card = 28
-public let CARD_FIVE_OF_HEARTS: Card = 29
-public let CARD_SIX_OF_HEARTS: Card = 30
-public let CARD_SEVEN_OF_HEARTS: Card = 31
-public let CARD_EIGHT_OF_HEARTS: Card = 32
-public let CARD_NINE_OF_HEARTS: Card = 33
-public let CARD_TEN_OF_HEARTS: Card = 34
-public let CARD_JACK_OF_HEARTS: Card = 35
-public let CARD_QUEEN_OF_HEARTS: Card = 36
-public let CARD_KING_OF_HEARTS: Card = 37
-public let CARD_ACE_OF_HEARTS: Card = 38
-public let CARD_TWO_OF_SPADES: Card = 39
-public let CARD_THREE_OF_SPADES: Card = 40
-public let CARD_FOUR_OF_SPADES: Card = 41
-public let CARD_FIVE_OF_SPADES: Card = 42
-public let CARD_SIX_OF_SPADES: Card = 43
-public let CARD_SEVEN_OF_SPADES: Card = 44
-public let CARD_EIGHT_OF_SPADES: Card = 45
-public let CARD_NINE_OF_SPADES: Card = 46
-public let CARD_TEN_OF_SPADES: Card = 47
-public let CARD_JACK_OF_SPADES: Card = 48
-public let CARD_QUEEN_OF_SPADES: Card = 49
-public let CARD_KING_OF_SPADES: Card = 50
-public let CARD_ACE_OF_SPADES: Card = 51
+public let CARD_TWO_OF_CLUBS:       Card = 0
+public let CARD_THREE_OF_CLUBS:     Card = 1
+public let CARD_FOUR_OF_CLUBS:      Card = 2
+public let CARD_FIVE_OF_CLUBS:      Card = 3
+public let CARD_SIX_OF_CLUBS:       Card = 4
+public let CARD_SEVEN_OF_CLUBS:     Card = 5
+public let CARD_EIGHT_OF_CLUBS:     Card = 6
+public let CARD_NINE_OF_CLUBS:      Card = 7
+public let CARD_TEN_OF_CLUBS:       Card = 8
+public let CARD_JACK_OF_CLUBS:      Card = 9
+public let CARD_QUEEN_OF_CLUBS:     Card = 10
+public let CARD_KING_OF_CLUBS:      Card = 11
+public let CARD_ACE_OF_CLUBS:       Card = 12
+public let CARD_TWO_OF_DIAMONDS:    Card = 13
+public let CARD_THREE_OF_DIAMONDS:  Card = 14
+public let CARD_FOUR_OF_DIAMONDS:   Card = 15
+public let CARD_FIVE_OF_DIAMONDS:   Card = 16
+public let CARD_SIX_OF_DIAMONDS:    Card = 17
+public let CARD_SEVEN_OF_DIAMONDS:  Card = 18
+public let CARD_EIGHT_OF_DIAMONDS:  Card = 19
+public let CARD_NINE_OF_DIAMONDS:   Card = 20
+public let CARD_TEN_OF_DIAMONDS:    Card = 21
+public let CARD_JACK_OF_DIAMONDS:   Card = 22
+public let CARD_QUEEN_OF_DIAMONDS:  Card = 23
+public let CARD_KING_OF_DIAMONDS:   Card = 24
+public let CARD_ACE_OF_DIAMONDS:    Card = 25
+public let CARD_TWO_OF_HEARTS:      Card = 26
+public let CARD_THREE_OF_HEARTS:    Card = 27
+public let CARD_FOUR_OF_HEARTS:     Card = 28
+public let CARD_FIVE_OF_HEARTS:     Card = 29
+public let CARD_SIX_OF_HEARTS:      Card = 30
+public let CARD_SEVEN_OF_HEARTS:    Card = 31
+public let CARD_EIGHT_OF_HEARTS:    Card = 32
+public let CARD_NINE_OF_HEARTS:     Card = 33
+public let CARD_TEN_OF_HEARTS:      Card = 34
+public let CARD_JACK_OF_HEARTS:     Card = 35
+public let CARD_QUEEN_OF_HEARTS:    Card = 36
+public let CARD_KING_OF_HEARTS:     Card = 37
+public let CARD_ACE_OF_HEARTS:      Card = 38
+public let CARD_TWO_OF_SPADES:      Card = 39
+public let CARD_THREE_OF_SPADES:    Card = 40
+public let CARD_FOUR_OF_SPADES:     Card = 41
+public let CARD_FIVE_OF_SPADES:     Card = 42
+public let CARD_SIX_OF_SPADES:      Card = 43
+public let CARD_SEVEN_OF_SPADES:    Card = 44
+public let CARD_EIGHT_OF_SPADES:    Card = 45
+public let CARD_NINE_OF_SPADES:     Card = 46
+public let CARD_TEN_OF_SPADES:      Card = 47
+public let CARD_JACK_OF_SPADES:     Card = 48
+public let CARD_QUEEN_OF_SPADES:    Card = 49
+public let CARD_KING_OF_SPADES:     Card = 50
+public let CARD_ACE_OF_SPADES:      Card = 51
+
+public typealias Bidding = [Bid]
+
+public extension Bidding {
+    public func GetFinalContract() -> Contract? {
+        let bid: Bid = getLastBid()
+        let declarer: Direction = getDeclarer()
+        let modifier: Modifier = getLastModifier()
+        let contract: Contract = Contract(bid: bid, declarer: declarer, modifier: modifier)
+        
+        return isComplete() ? contract : nil
+    }
+    
+    public func getLastBid() -> Bid {
+        if let idx = self.lastIndex(where: { $0 > BID_REDOUBLE }) {
+            return self[idx]
+        }
+        return BID_PASS
+    }
+    
+    public func getLastModifier() -> Modifier {
+        var copy = self
+        if count == 0 {
+            return MODIFIER_PASSED
+        }
+        while !copy.isEmpty {
+            let curr: Bid = copy.popLast()!
+            if curr > BID_REDOUBLE {
+                return MODIFIER_PASSED
+            }
+            if curr == BID_REDOUBLE {
+                return MODIFIER_REDOUBLED
+            }
+            if curr == BID_DOUBLE {
+                return MODIFIER_DOUBLED
+            }
+        }
+        return MODIFIER_PASSED
+    }
+    
+    func getDeclarer() -> Direction {
+        if let idx = self.lastIndex(where: { $0 > BID_REDOUBLE }) {
+            let strain = self[idx].strain()
+            for i in indices {
+                let bid = self[i]
+                if bid.strain() == strain {
+                    return 1 << (i & 3)
+                }
+            }
+        }
+        return DIRECTION_NONE
+    }
+    
+    func isComplete() -> Bool {
+        if !isValid() {
+            return false
+        }
+        if count < 4 {
+            return false
+        }
+        
+        return self[count-1] == BID_PASS && self[count-2] == BID_PASS && self[count-3] == BID_PASS
+    }
+    
+    func isValid() -> Bool {
+        if isEmpty {
+            return true
+        }
+        var currBid = self[0]
+        var currIndex = 0
+        var dbl = false
+        var rdbl = false
+        var passes = currBid == BID_PASS ? 1 : 0
+        if currBid == BID_DOUBLE || currBid == BID_REDOUBLE {
+            return false
+        }
+        for i in 1..<count {
+            let next = self[i]
+            if next > BID_REDOUBLE {
+                if currBid >= next {
+                    return false
+                }
+                currBid = next
+                currIndex = i
+                dbl = false
+                rdbl = false
+                passes = 0
+            }
+            if next == BID_PASS {
+                passes += 1
+                if passes > 3 && count > 4 {
+                    return false
+                }
+            }
+            if next == BID_DOUBLE {
+                if i & 1 == currIndex & 1 || dbl || rdbl {
+                    return false
+                }
+                dbl = true
+                passes = 0
+            }
+            if next == BID_REDOUBLE {
+                if !dbl || i & 1 != currIndex & 1 || rdbl {
+                    return false
+                }
+                dbl = false
+                rdbl = true
+                passes = 0
+            }
+        }
+        return true
+    }
+}
 
 public extension Modifier {
     static let PASSED: Modifier = MODIFIER_PASSED
@@ -149,6 +321,19 @@ public extension Modifier {
     
     func isRedoubled() -> Bool {
         return self == Modifier.REDOUBLED
+    }
+    
+    func modifierToShortString() -> String {
+        switch self {
+        case MODIFIER_PASSED:
+            return ""
+        case MODIFIER_DOUBLED:
+            return "X"
+        case MODIFIER_REDOUBLED:
+            return "XX"
+        default:
+            return ""
+        }
     }
 }
 
@@ -173,6 +358,39 @@ public extension Strain {
     }
 }
 
+public extension Card {
+    func cardToHolding() -> Holding {
+        return Holding(1) << self
+    }
+    
+    func cardGetStrain() -> Strain {
+        return STRAIN_CLUB << (self / 13)
+    }
+    
+    func cardGetRankString() -> String {
+        return ranks[Int(self % 13)]
+    }
+}
+
+public extension Direction {
+    public func directionToShortString() -> String {
+        var sb = ""
+        if self & DIRECTION_NORTH != 0 {
+            sb += "N"
+        }
+        if self & DIRECTION_EAST != 0 {
+            sb += "E"
+        }
+        if self & DIRECTION_SOUTH != 0 {
+            sb += "S"
+        }
+        if self & DIRECTION_WEST != 0 {
+            sb += "W"
+        }
+        return sb
+    }
+}
+
 
 public extension Holding {
     func hcp() -> Int {
@@ -183,20 +401,30 @@ public extension Holding {
             (self & JACKS).nonzeroBitCount
     }
     
-    func spades() -> UInt64 {
+    func spades() -> Holding {
         return self & SPADES
     }
     
-    func hearts() -> UInt64 {
+    func hearts() -> Holding {
         return self & HEARTS
     }
     
-    func diamonds() -> UInt64 {
+    func diamonds() -> Holding {
         return self & DIAMONDS
     }
     
-    func clubs() -> UInt64 {
+    func clubs() -> Holding {
         return self & CLUBS
+    }
+    
+    func cards() -> [Card] {
+        var cards: [Card] = []
+        for i in 0..<52 {
+            if self & (Holding(1) << i) != 0 {
+                cards.append(Card(i))
+            }
+        }
+        return cards
     }
     
     func toPBN() -> String {
@@ -332,11 +560,11 @@ public extension Bid {
     }
 }
 
-public struct Deal : Codable {
-    public var north: Holding
-    public var east: Holding
-    public var south: Holding
-    public var west: Holding
+public struct Deal : Codable, Hashable, Equatable {
+    public var north: Holding = 0
+    public var east: Holding = 0
+    public var south: Holding = 0
+    public var west: Holding = 0
     
     public init(_ north: Holding = 0, _ east: Holding = 0, _ south: Holding = 0, _ west: Holding = 0) {
         self.north = north
@@ -344,11 +572,59 @@ public struct Deal : Codable {
         self.south = south
         self.west = west
     }
+    
+    public static func | (lhs: Deal, rhs: Deal) -> Deal {
+        return Deal(lhs.north | rhs.north, lhs.east | rhs.east, lhs.south | rhs.south, lhs.west | rhs.west)
+    }
+    
+    public static func & (lhs: Deal, rhs: Deal) -> Deal {
+       return Deal(lhs.north & rhs.north, lhs.east & rhs.east, lhs.south & rhs.south, lhs.west & rhs.west)
+    }
+       
+   public static func ^ (lhs: Deal, rhs: Deal) -> Deal {
+       return Deal(lhs.north ^ rhs.north, lhs.east ^ rhs.east, lhs.south ^ rhs.south, lhs.west ^ rhs.west)
+   }
+   
+    public static func << (lhs: Deal, rhs: UInt64) -> Deal {
+       return Deal(((lhs.north & DECK) << rhs) | ((lhs.north & DECK) >> (52 - rhs)), ((lhs.east & DECK) << rhs) | ((lhs.east & DECK) >> (52 - rhs)), ((lhs.south & DECK) << rhs) | ((lhs.south & DECK) >> (52 - rhs)), ((lhs.west & DECK) << rhs) | ((lhs.west & DECK) >> (52 - rhs))) & DECK
+   }
+   
+    public static func >> (lhs: Deal, rhs: UInt64) -> Deal {
+       return lhs << (52 - rhs)
+   }
+
+    public static func | (lhs: Deal, rhs: Holding) -> Deal {
+        return Deal(lhs.north | rhs, lhs.east | rhs, lhs.south | rhs, lhs.west | rhs)
+    }
+    
+    public static func & (lhs: Deal, rhs: Holding) -> Deal {
+        return Deal(lhs.north & rhs, lhs.east & rhs, lhs.south & rhs, lhs.west & rhs)
+    }
+    
+    public static func ^ (lhs: Deal, rhs: Holding) -> Deal {
+        return Deal(lhs.north ^ rhs, lhs.east ^ rhs, lhs.south ^ rhs, lhs.west ^ rhs)
+    }
+    
+    public mutating func rotateLeft() {
+        let temp = north
+        north = east
+        east = south
+        south = west
+        west = temp
+    }
+    
+    public mutating func rotateRight() {
+        let temp = north
+        north = west
+        west = south
+        south = east
+        east = temp
+    }
 }
 
 public struct DealState : Codable {
     public var deal: Deal
-    public var play: [Card]
+    public var play: [Deal] // trick array
     public var bidding: [Bid]
 }
 
@@ -395,7 +671,7 @@ public extension Deal {
     
 }
 
-func StringToHolding(pbn: String) -> UInt64 {
+public func StringToHolding(pbn: String) -> UInt64 {
     var holding: UInt64 = 0
     let parts = pbn.split(separator: ".", maxSplits: 3, omittingEmptySubsequences: false)
     
