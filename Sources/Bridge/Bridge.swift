@@ -1,5 +1,7 @@
 // The Swift Programming Language
 // https://docs.swift.org/swift-book
+
+import Foundation
 public let ranks: [String] = ["2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K", "A"]
 public let strains: [String] = ["C", "D", "H", "S", "N"]
 
@@ -88,11 +90,11 @@ public let STRAIN_ALL: Strain = 31
 public let STRAIN_NONE: Strain = 0
 
 public typealias Bid = UInt8
-public let BID_PASS: Bid = 0
-public let BID_DOUBLE: Bid = 1
-public let BID_REDOUBLE: Bid = 2
-public let BID_NONE: Bid = 3
-public let BID_1_CLUBS: Bid = 33        // level << 6 + suit
+public let BID_NONE: Bid = 0
+public let BID_PASS: Bid = 1
+public let BID_DOUBLE: Bid = 2
+public let BID_REDOUBLE: Bid = 4
+public let BID_1_CLUBS: Bid = 33        // level << 5 + suit
 public let BID_2_CLUBS: Bid = 65
 public let BID_3_CLUBS: Bid = 97
 public let BID_4_CLUBS: Bid = 129
@@ -200,7 +202,7 @@ public let CARD_ACE_OF_SPADES:      Card = 51
 public typealias Bidding = [Bid]
 
 public extension Bidding {
-    public func GetFinalContract() -> Contract? {
+    func getFinalContract() -> Contract? {
         let bid: Bid = getLastBid()
         let declarer: Direction = getDeclarer()
         let modifier: Modifier = getLastModifier()
@@ -209,14 +211,14 @@ public extension Bidding {
         return isComplete() ? contract : nil
     }
     
-    public func getLastBid() -> Bid {
+    func getLastBid() -> Bid {
         if let idx = self.lastIndex(where: { $0 > BID_REDOUBLE }) {
             return self[idx]
         }
         return BID_PASS
     }
     
-    public func getLastModifier() -> Modifier {
+    func getLastModifier() -> Modifier {
         var copy = self
         if count == 0 {
             return MODIFIER_PASSED
@@ -373,7 +375,7 @@ public extension Card {
 }
 
 public extension Direction {
-    public func directionToShortString() -> String {
+    func directionToShortString() -> String {
         var sb = ""
         if self & DIRECTION_NORTH != 0 {
             sb += "N"
@@ -399,6 +401,23 @@ public extension Holding {
             (self & KINGS).nonzeroBitCount * 3 +
             (self & QUEENS).nonzeroBitCount * 2 +
             (self & JACKS).nonzeroBitCount
+    }
+    
+    func getSuit(suit: Strain) -> Holding {
+        var mask: Holding = 0
+        if suit & STRAIN_SPADE != 0 {
+            mask |= SPADES
+        }
+        if suit & STRAIN_HEART != 0 {
+            mask |= HEARTS
+        }
+        if suit & STRAIN_DIAMOND != 0 {
+            mask |= DIAMONDS
+        }
+        if suit & STRAIN_CLUB != 0 {
+            mask |= CLUBS
+        }
+        return self & mask
     }
     
     func spades() -> Holding {
@@ -427,32 +446,66 @@ public extension Holding {
         return cards
     }
     
-    func toPBN() -> String {
+    func toPBN(includeDots: Bool = true) -> String {
         var sb = ""
         for i in (0..<13).reversed() {
             if (self >> (39 + i)) & 1 == 1 {
                 sb += ranks[i]
             }
         }
-        sb += "."
+        if includeDots {
+            sb += "."
+        }
         for i in (0..<13).reversed() {
             if (self >> (26 + i)) & 1 == 1 {
                 sb += ranks[i]
             }
         }
-        sb += "."
+        if includeDots {
+            sb += "."
+        }
         for i in (0..<13).reversed() {
             if (self >> (13 + i)) & 1 == 1 {
                 sb += ranks[i]
             }
         }
-        sb += "."
+        if includeDots {
+            sb += "."
+        }
         for i in (0..<13).reversed() {
             if (self >> i) & 1 == 1 {
                 sb += ranks[i]
             }
         }
         return sb
+    }
+    
+    mutating func setSpades(pbn: String) {
+        let h = SpadesToHolding(pbn: pbn)
+        let mask = ~SPADES
+        self &= mask
+        self |= h
+    }
+
+    mutating func setHearts(pbn: String) {
+        let h = HeartsToHolding(pbn: pbn)
+        let mask = ~HEARTS
+        self &= mask
+        self |= h
+    }
+
+    mutating func setDiamonds(pbn: String) {
+        let h = DiamondsToHolding(pbn: pbn)
+        let mask = ~DIAMONDS
+        self &= mask
+        self |= h
+    }
+
+    mutating func setClubs(pbn: String) {
+        let h = ClubsToHolding(pbn: pbn)
+        let mask = ~CLUBS
+        self &= mask
+        self |= h
     }
 }
 
@@ -573,6 +626,46 @@ public struct Deal : Codable, Hashable, Equatable {
         self.west = west
     }
     
+    public func overlaps() -> Holding {
+        let pairwise1 = (north & south)
+        let pairwise2 = (north & east)
+        let pairwise3 = (north & west)
+        let pairwise4 = (south & east)
+        let pairwise5 = (south & west)
+        let pairwise6 = (east & west)
+
+        return pairwise1 | pairwise2 | pairwise3 | pairwise4 | pairwise5 | pairwise6
+    }
+    
+    public func hasError() -> Bool {
+        return overlaps() != 0 ||
+        north.nonzeroBitCount != 13 ||
+        east.nonzeroBitCount != 13 ||
+        south.nonzeroBitCount != 13 ||
+        west.nonzeroBitCount != 13
+    }
+    
+    public func remainder() -> Holding {
+        return DECK ^ (north | east | south | west)
+    }
+    
+    public func getHolding(dir: Direction) -> Holding {
+        var holding: Holding = 0
+        if dir & DIRECTION_NORTH != 0 {
+            holding |= north
+        }
+        if dir & DIRECTION_EAST != 0 {
+            holding |= east
+        }
+        if dir & DIRECTION_SOUTH != 0 {
+            holding |= south
+        }
+        if dir & DIRECTION_WEST != 0 {
+            holding |= west
+        }
+        return holding
+    }
+    
     public static func | (lhs: Deal, rhs: Deal) -> Deal {
         return Deal(lhs.north | rhs.north, lhs.east | rhs.east, lhs.south | rhs.south, lhs.west | rhs.west)
     }
@@ -620,23 +713,167 @@ public struct Deal : Codable, Hashable, Equatable {
         south = east
         east = temp
     }
+    
+    public mutating func mirrorNS() {
+        let temp = north
+        north = south
+        south = temp
+    }
+    
+    public mutating func mirrorEW() {
+        let temp = east
+        east = west
+        west = temp
+    }
+    
+    public mutating func mirrorNE() {
+        let temp = north
+        north = east
+        east = temp
+    }
+    
+    public mutating func mirrorNW() {
+        let temp = north
+        north = west
+        west = temp
+    }
+    
+    public mutating func mirrorSE() {
+        let temp = south
+        south = east
+        east = temp
+    }
+    
+    public mutating func mirrorSW() {
+        let temp = south
+        south = west
+        west = temp
+    }
+    
+    public mutating func variation() {
+        var mask = (Holding(1) << 6) - 1
+        var newDeal = Deal.random(predeal: self & ~mask)
+        mask = ((Holding(1) << 6) - 1) << (13 * 1)
+        newDeal = Deal.random(predeal: newDeal & ~mask)
+        mask = ((Holding(1) << 6) - 1) << (13 * 2)
+        newDeal = Deal.random(predeal: newDeal & ~mask)
+        mask = ((Holding(1) << 6) - 1) << (13 * 3)
+        newDeal = Deal.random(predeal: newDeal & ~mask)
+        
+        self.north = newDeal.north
+        self.east = newDeal.east
+        self.south = newDeal.south
+        self.west = newDeal.west
+    }
+    
+    public static func random() -> Deal {
+        var deal: Deal = Deal()
+        
+        var cards: [Holding] = []
+        for i in 0..<52 {
+            cards.append(1 << i)
+        }
+        cards.shuffle()
+        for i in 0..<13 {
+            deal.north |= cards[i]
+        }
+        for i in 13..<26 {
+            deal.east |= cards[i]
+        }
+        for i in 26..<39 {
+            deal.south |= cards[i]
+        }
+        for i in 39..<52 {
+            deal.west |= cards[i]
+        }
+        
+        return deal
+    }
+    
+    public static func random(predeal: Deal) -> Deal {
+        var deal = predeal
+        let dealt = deal.north | deal.east | deal.south | deal.west
+        var cards: [Holding] = []
+        for i in 0..<52 {
+            cards.append(1 << i)
+        }
+        cards.shuffle()
+        
+        while !cards.isEmpty {
+            guard let card = cards.popLast() else { return deal }
+            if card & dealt != 0 {
+                continue
+            }
+            switch true {
+            case deal.north.nonzeroBitCount < 13:
+                deal.north |= card
+                continue
+            case deal.east.nonzeroBitCount < 13:
+                deal.east |= card
+                continue
+            case deal.south.nonzeroBitCount < 13:
+                deal.south |= card
+                continue
+            case deal.west.nonzeroBitCount < 13:
+                deal.west |= card
+                continue
+            default:
+                return deal
+            }
+        }
+        
+        return deal
+    }
 }
 
-public struct DealState : Codable {
+public struct DealState : Codable, Hashable {
+    public var dealNumber: UInt8
     public var deal: Deal
-    public var play: [Deal] // trick array
+    public var play: [Card]
     public var bidding: [Bid]
+    
+    public init(dealNumber: UInt8 = 1, deal: Deal = Deal(), play: [Card] = [], bidding: [Bid] = []) {
+        self.dealNumber = dealNumber
+        self.deal = deal
+        self.play = play
+        self.bidding = bidding
+    }
 }
 
-public struct Contract : Codable {
+public struct ExtendedDealState : Codable, Hashable {
+    public var state: DealState
+    public var meta: Dictionary<String, String>
+    
+    public init(state: DealState = DealState(), meta: Dictionary<String, String> = [:]) {
+        self.state = state
+        self.meta = meta
+    }
+}
+
+public struct Contract : Codable, Hashable {
     public var bid: Bid
     public var declarer: Direction
     public var modifier: Modifier
+    
+    public var leader: Direction {
+        get {
+            if declarer == DIRECTION_WEST {
+                return DIRECTION_NORTH
+            }
+            return declarer << 1
+        }
+    }
     
     public init(bid: Bid, declarer: Direction, modifier: Modifier) {
         self.bid = bid
         self.declarer = declarer
         self.modifier = modifier
+    }
+}
+
+public extension Contract {
+    func score(tricks: Int, vul: Bool) -> Int {
+        return self.bid.scoreContract(tricks: tricks, modifier: self.modifier, vul: vul)
     }
 }
 
@@ -669,6 +906,115 @@ public extension Deal {
         return sb
     }
     
+    func toDUP() -> String {
+        var sb = ""
+        for i in 0..<52 {
+            let card = Holding(1) << (51 - i)
+            if self.north & card == card {
+                sb += String(format: "%02d", i + 1)
+            }
+        }
+        for i in 0..<52 {
+            let card = Holding(1) << (51 - i)
+            if self.east & card == card {
+                sb += String(format: "%02d", i + 1)
+            }
+        }
+        for i in 0..<52 {
+            let card = Holding(1) << (51 - i)
+            if self.south & card == card {
+                sb += String(format: "%02d", i + 1)
+            }
+        }
+        
+        sb += String(Character(UnicodeScalar(6)))
+        sb += self.north.spades().toPBN(includeDots: false)
+        sb += String(Character(UnicodeScalar(3)))
+        sb += self.north.hearts().toPBN(includeDots: false)
+        sb += String(Character(UnicodeScalar(4)))
+        sb += self.north.diamonds().toPBN(includeDots: false)
+        sb += String(Character(UnicodeScalar(5)))
+        sb += self.north.clubs().toPBN(includeDots: false)
+        
+        sb += String(Character(UnicodeScalar(6)))
+        sb += self.east.spades().toPBN(includeDots: false)
+        sb += String(Character(UnicodeScalar(3)))
+        sb += self.east.hearts().toPBN(includeDots: false)
+        sb += String(Character(UnicodeScalar(4)))
+        sb += self.east.diamonds().toPBN(includeDots: false)
+        sb += String(Character(UnicodeScalar(5)))
+        sb += self.east.clubs().toPBN(includeDots: false)
+        
+        sb += String(Character(UnicodeScalar(6)))
+        sb += self.south.spades().toPBN(includeDots: false)
+        sb += String(Character(UnicodeScalar(3)))
+        sb += self.south.hearts().toPBN(includeDots: false)
+        sb += String(Character(UnicodeScalar(4)))
+        sb += self.south.diamonds().toPBN(includeDots: false)
+        sb += String(Character(UnicodeScalar(5)))
+        sb += self.south.clubs().toPBN(includeDots: false)
+        
+        sb += String(Character(UnicodeScalar(6)))
+        sb += self.west.spades().toPBN(includeDots: false)
+        sb += String(Character(UnicodeScalar(3)))
+        sb += self.west.hearts().toPBN(includeDots: false)
+        sb += String(Character(UnicodeScalar(4)))
+        sb += self.west.diamonds().toPBN(includeDots: false)
+        sb += String(Character(UnicodeScalar(5)))
+        sb += self.west.clubs().toPBN(includeDots: false)
+        
+        return sb
+    }
+    
+    public func toBytes() -> [UInt8] {
+        var bytes: [UInt8] = []
+        for i in 0..<8 {
+            bytes.append(UInt8((self.north >> (8 * i)) & 0xFF))
+        }
+        for i in 0..<8 {
+            bytes.append(UInt8((self.east >> (8 * i)) & 0xFF))
+        }
+        for i in 0..<8 {
+            bytes.append(UInt8((self.south >> (8 * i)) & 0xFF))
+        }
+        for i in 0..<8 {
+            bytes.append(UInt8((self.west >> (8 * i)) & 0xFF))
+        }
+        return bytes
+    }
+    
+    enum ConversionError: Error {
+        case invalidByteCount
+    }
+    
+    public static func from(bytes: [UInt8]) throws -> Deal {
+        if bytes.count != 32 {
+            throw ConversionError.invalidByteCount
+        }
+        
+        var north: Holding = 0
+        for i in 0..<8 {
+            north |= Holding(bytes[i]) << (i * 8)
+        }
+        
+        var east: Holding = 0
+        for i in 8..<16 {
+            east |= Holding(bytes[i]) << ((i-8) * 8)
+        }
+        
+        var south: Holding = 0
+        for i in 16..<24 {
+            south |= Holding(bytes[i]) << ((i-16) * 8)
+        }
+        
+        var west: Holding = 0
+        for i in 24..<32 {
+            west |= Holding(bytes[i]) << ((i-24) * 8)
+        }
+        
+        return Deal(north, east, south, west)
+    }
+    
 }
 
 public func StringToHolding(pbn: String) -> UInt64 {
@@ -682,7 +1028,7 @@ public func StringToHolding(pbn: String) -> UInt64 {
     return holding
 }
 
-func SuitToHolding(pbn: String, strain: Strain) -> UInt64 {
+public func SuitToHolding(pbn: String, strain: Strain) -> UInt64 {
     if strain == Strain.SPADES {
         return SpadesToHolding(pbn: pbn)
     }
@@ -698,7 +1044,7 @@ func SuitToHolding(pbn: String, strain: Strain) -> UInt64 {
     return 0
 }
 
-func SpadesToHolding(pbn: String) -> UInt64 {
+public func SpadesToHolding(pbn: String) -> UInt64 {
     var holding: UInt64 = 0
     for s in pbn {
         let idx = ranks.firstIndex(of: "\(s)") ?? -1
@@ -710,7 +1056,7 @@ func SpadesToHolding(pbn: String) -> UInt64 {
     return holding
 }
 
-func HeartsToHolding(pbn: String) -> UInt64 {
+public func HeartsToHolding(pbn: String) -> UInt64 {
     var holding: UInt64 = 0
     for s in pbn {
         let idx = ranks.firstIndex(of: "\(s)") ?? -1
@@ -722,7 +1068,7 @@ func HeartsToHolding(pbn: String) -> UInt64 {
     return holding
 }
 
-func DiamondsToHolding(pbn: String) -> UInt64 {
+public func DiamondsToHolding(pbn: String) -> UInt64 {
     var holding: UInt64 = 0
     for s in pbn {
         let idx = ranks.firstIndex(of: "\(s)") ?? -1
@@ -734,7 +1080,7 @@ func DiamondsToHolding(pbn: String) -> UInt64 {
     return holding
 }
 
-func ClubsToHolding(pbn: String) -> UInt64 {
+public func ClubsToHolding(pbn: String) -> UInt64 {
     var holding: UInt64 = 0
     for s in pbn {
         let idx = ranks.firstIndex(of: "\(s)") ?? -1
@@ -747,12 +1093,12 @@ func ClubsToHolding(pbn: String) -> UInt64 {
 }
 
 
-func nsvul(_ boardNumber: Int) -> Bool {
+public func nsvul(_ boardNumber: Int) -> Bool {
     let b = (boardNumber - 1) & 15
     return (b ^ (b >> 2)) & 1 == 1
 }
 
-func ewvul(_ boardNumber: Int) -> Bool {
+public func ewvul(_ boardNumber: Int) -> Bool {
     let b = (boardNumber - 1) & 15
     return (b + (b >> 2)) & 2 == 2
 }
@@ -760,3 +1106,715 @@ func ewvul(_ boardNumber: Int) -> Bool {
 public func vulnerability(_ boardNumber: Int) -> Direction {
     return (nsvul(boardNumber) ? DIRECTION_NORTH_SOUTH : DIRECTION_NONE) | (ewvul(boardNumber) ? DIRECTION_EAST_WEST : DIRECTION_NONE)
 }
+
+
+public enum ExportFormat {
+    case PBN
+    case DUP
+    case BIN
+    case JSON
+}
+
+@available(iOS 16.0, *)
+@available(macOS 13.0, *)
+public extension [Deal] {
+    public static func importFromFile(_ url: URL, _ format: ExportFormat? = nil) throws -> [Deal] {
+        var deals: [Deal] = []
+        
+        switch format {
+        case .PBN:
+            try! deals = self.importPBN(url)
+            break
+        case .DUP:
+            try! deals = self.importDUP(url)
+            break
+        case .BIN:
+            try! deals = self.importBIN(url)
+            break
+        case .JSON:
+            try! deals = self.importJSON(url)
+            break
+        default:
+            switch url.pathExtension {
+            case "pbn":
+                try! deals = self.importFromFile(url, .PBN)
+                break
+            case "dup":
+                try! deals = self.importFromFile(url, .DUP)
+                break
+            case "json":
+                try! deals = self.importFromFile(url, .JSON)
+                break
+            case "bin":
+                try! deals = self.importFromFile(url, .BIN)
+                break
+            default:
+                throw NSError(domain: "DealsImportError", code: 1001, userInfo: [NSLocalizedDescriptionKey : "File extension not supported for deals import: \(url.pathExtension)"])
+            }
+        }
+        
+        return deals
+    }
+    
+    public static func importDUP(_ url: URL) throws -> [Deal] {
+        var deals: [Deal] = []
+        
+        return deals
+    }
+    
+    public static func importBIN(_ url: URL) throws -> [Deal] {
+        var deals: [Deal] = []
+        
+        return deals
+    }
+    
+    public static func importJSON(_ url: URL) throws -> [Deal] {
+        var deals: [Deal] = []
+        
+        do {
+            let data = try Data(contentsOf: url)
+            let decoder = JSONDecoder()
+            let deals = try decoder.decode([Deal].self, from: data)
+            return deals
+        } catch {
+            throw NSError(domain: "DealsImportError", code: 1001, userInfo: [NSLocalizedDescriptionKey : "Could not parse JSON data"])
+        }
+        
+        return deals
+    }
+    
+    public static func importPBN(_ url: URL) throws -> [Deal] {
+        var deals: [Deal] = []
+        
+        do {
+            let contents = try String(contentsOf: url, encoding: .utf8)
+            let lines = contents.components(separatedBy: .newlines)
+            for line in lines {
+                if let match = line.firstMatch(of: #/\[Deal "([NESW]):([23456789TJQKA\s\.]+)"\]/#) {
+                    let deal = Deal.parse(pbn: match.2.description, format: match.1.description)
+                    deals.append(deal)
+                    print(deal.toPBN())
+                }
+            }
+        } catch {
+            throw NSError(domain: "DealsImportError", code: 1001, userInfo: [NSLocalizedDescriptionKey : "Could not parse JSON data"])
+        }
+        
+        return deals
+    }
+    
+    public func exportToFile(_ url: URL, _ format: ExportFormat? = nil) throws {
+        switch format {
+        case .PBN:
+            try! self.exportPBN(url)
+            break
+        case .DUP:
+            try! self.exportDUP(url)
+            break
+        case .BIN:
+            try! self.exportBIN(url)
+            break
+        case .JSON:
+            try! self.exportJSON(url)
+            break
+        default:
+            switch url.pathExtension {
+            case "pbn":
+                try self.exportToFile(url, .PBN)
+                break
+            case "dup":
+                try self.exportToFile(url, .DUP)
+                break
+            case "json":
+                try self.exportToFile(url, .JSON)
+                break
+            case "bin":
+                try self.exportToFile(url, .BIN)
+                break
+            default:
+                throw NSError(domain: "DealsExportError", code: 1001, userInfo: [NSLocalizedDescriptionKey : "File extension not supported for deals export: \(url.pathExtension)"])
+            }
+        }
+    }
+    
+    public static func from(bytes: [UInt8]) throws -> [Deal] {
+        var deals: [Deal] = []
+        
+        var readPointer = 0
+        var readEnd = bytes.count
+        
+        while readPointer + 32 < readEnd {
+            do {
+                let deal: Deal = try Deal.from(bytes: Array<UInt8>(bytes[readPointer..<readPointer+32]))
+                readPointer += 32
+                
+                deals.append(deal)
+            }
+            catch {
+                throw error
+            }
+        }
+        
+        return deals
+    }
+    
+    public func toBytes() -> [UInt8] {
+        var bytes: [UInt8] = []
+        for deal in self {
+            for byte in deal.toBytes() {
+                bytes.append(byte)
+            }
+        }
+        return bytes
+    }
+    
+    public func exportBIN(_ url: URL) throws {
+        var bytes: [UInt8] = toBytes()
+        
+        let data = Data(bytes)
+        do {
+            try data.write(to: url)
+        } catch {
+            throw error
+        }
+    }
+    
+    public func exportJSON(_ url: URL) throws {
+        do {
+            let encoder = JSONEncoder()
+            let data = try encoder.encode(self)
+            try data.write(to: url)
+        } catch {
+            throw NSError(domain: "DealsExportError", code: 1001, userInfo: [NSLocalizedDescriptionKey : "Unable to convert to JSON data"])
+        }
+    }
+    
+    public func exportPBN(_ url: URL) throws {
+        var sb = ""
+        var bn = 1
+        for deal in self {
+            sb += "[Board \"\(bn)\"]\n"
+            sb += "[Deal \"N:\(deal.toPBN())\"]\n"
+            bn += 1
+        }
+        
+        if let data = sb.data(using: .utf8) {
+            do {
+                try data.write(to: url)
+            } catch {
+                throw error
+            }
+        } else {
+            throw NSError(domain: "DealsExportError", code: 1001, userInfo: [NSLocalizedDescriptionKey : "Unable to convert string to UTF-8 data."])
+        }
+    }
+    
+    public func exportDUP(_ url: URL) throws {
+        var sb = ""
+        for deal in self {
+            sb += deal.toDUP()
+            sb += "YN1"
+            sb += String(format: "  1%3d ", self.count)
+        }
+        
+        if let data = sb.data(using: .utf8) {
+            do {
+                try data.write(to: url)
+            } catch {
+                throw error
+            }
+        } else {
+            throw NSError(domain: "DealsExportError", code: 1001, userInfo: [NSLocalizedDescriptionKey : "Unable to convert string to UTF-8 data."])
+        }
+    }
+}
+
+public extension DealState {
+    public func toBytes() -> [UInt8] {
+        var bytes: [UInt8] = []
+        
+        bytes.append(self.dealNumber)
+        for byte in self.deal.toBytes() {
+            bytes.append(byte)
+        }
+        for bid in self.bidding {
+            bytes.append(bid)
+        }
+        bytes.append(0xFF)
+        for card in self.play {
+            bytes.append(card)
+        }
+        bytes.append(0xFF)
+        
+        return bytes
+    }
+}
+
+public extension [DealState] {
+    public func exportToFile(at url: URL) throws {
+        let bytes = toBytes()
+        let data = Data(bytes)
+        do {
+            try data.write(to: url)
+        } catch {
+            throw error
+        }
+    }
+    
+    public static func importFromFile(at url: URL) throws -> [DealState] {
+        do {
+            let data = try Data(contentsOf: url)
+            let bytes = [UInt8](data)
+            return try from(bytes: bytes)
+        } catch {
+            throw error
+        }
+    }
+    
+    public func toBytes() -> [UInt8] {
+        var bytes: [UInt8] = []
+        
+        for state in self {
+            for byte in state.toBytes() {
+                bytes.append(byte)
+            }
+        }
+        
+        return bytes
+    }
+    
+    public static func from(bytes: [UInt8]) throws -> [DealState] {
+        var states: [DealState] = []
+        
+        var readPointer = 0
+        var readEnd = bytes.count
+        while readPointer + 33 < readEnd {
+            do {
+                // read deal number
+                let dealNumber: UInt8 = bytes[readPointer]
+                readPointer += 1
+                
+                // read deal
+                let deal: Deal = try Deal.from(bytes: Array<UInt8>(bytes[readPointer..<readPointer+32]))
+                readPointer += 32
+                
+                // read bidding
+                var bidding: Bidding = []
+                while readPointer < readEnd && bytes[readPointer] != 0xFF {
+                    bidding.append(bytes[readPointer])
+                    readPointer += 1
+                }
+                readPointer += 1
+                
+                // read play
+                var play: [Card] = []
+                while readPointer < readEnd && bytes[readPointer] != 0xFF {
+                    play.append(bytes[readPointer])
+                    readPointer += 1
+                }
+                readPointer += 1
+                
+                states.append(DealState(dealNumber: dealNumber, deal: deal, play: play, bidding: bidding))
+            }
+            catch {
+                throw error
+            }
+        }
+        
+        return states
+    }
+}
+
+public extension ExtendedDealState {
+    public func toBytes() -> [UInt8] {
+        var bytes: [UInt8] = []
+        
+        for byte in self.state.toBytes() {
+            bytes.append(byte)
+        }
+        
+        do {
+            // Encode the dictionary to a binary property list format
+            let plistData: Data = try PropertyListSerialization.data(fromPropertyList: self.meta, format: .binary, options: 0)
+            let plistBytes: [UInt8] = [UInt8](plistData)
+            var count: Int32 = Int32(plistBytes.count)
+            for byte in [UInt8](Data(bytes: &count, count: MemoryLayout<Int32>.size)) {
+                bytes.append(byte)
+            }
+            for byte in plistBytes {
+                bytes.append(byte)
+            }
+        } catch {
+            print("Error converting dictionary to binary plist: \(error.localizedDescription)")
+            
+        }
+        
+        return bytes
+    }
+}
+
+public extension [ExtendedDealState] {
+    public func exportToFile(at url: URL) throws {
+        let bytes = toBytes()
+        let data = Data(bytes)
+        do {
+            try data.write(to: url)
+        } catch {
+            throw error
+        }
+    }
+    
+    public static func importFromFile(at url: URL) throws -> [ExtendedDealState] {
+        do {
+            let data = try Data(contentsOf: url)
+            let bytes = [UInt8](data)
+            return try from(bytes: bytes)
+        } catch {
+            throw error
+        }
+    }
+    
+    public func toBytes() -> [UInt8] {
+        var bytes: [UInt8] = []
+        
+        for estate in self {
+            for byte in estate.toBytes() {
+                bytes.append(byte)
+            }
+        }
+        
+        return bytes
+    }
+    
+    public static func from(bytes: [UInt8]) throws -> [ExtendedDealState] {
+        var estates: [ExtendedDealState] = []
+        
+        var readPointer = 0
+        var readEnd = bytes.count
+        
+        while readPointer + 39 < readEnd {
+            do {
+                // read deal number
+                let dealNumber: UInt8 = bytes[readPointer]
+                readPointer += 1
+                
+                // read deal
+                let deal: Deal = try Deal.from(bytes: Array<UInt8>(bytes[readPointer..<readPointer+32]))
+                readPointer += 32
+                
+                // read bidding
+                var bidding: Bidding = []
+                while readPointer < readEnd && bytes[readPointer] != 0xFF {
+                    bidding.append(bytes[readPointer])
+                    readPointer += 1
+                }
+                readPointer += 1
+                
+                // read play
+                var play: [Card] = []
+                while readPointer < readEnd && bytes[readPointer] != 0xFF {
+                    play.append(bytes[readPointer])
+                    readPointer += 1
+                }
+                readPointer += 1
+                
+                let state = DealState(dealNumber: dealNumber, deal: deal, play: play, bidding: bidding)
+                
+                let count: Int = Int(Data(bytes[readPointer..<readPointer+MemoryLayout<Int32>.size]).withUnsafeBytes { $0.load(as: Int32.self) })
+                readPointer += MemoryLayout<Int32>.size
+                let data = Data(bytes[readPointer..<readPointer+count])
+                readPointer += count
+                var meta: Dictionary<String, String> = [:]
+                do {
+                    if let dictionary = try PropertyListSerialization.propertyList(from: data, options: [], format: nil) as? [String: String] {
+                        meta = dictionary
+                    } else {
+                        print("Error: Data is not a valid [String: String] dictionary.")
+                    }
+                } catch {
+                    print("Error converting binary plist to dictionary: \(error.localizedDescription)")
+                }
+                let estate = ExtendedDealState(state: state, meta: meta)
+                estates.append(estate)
+            }
+            catch {
+                throw error
+            }
+        }
+        
+        return estates
+    }
+}
+
+
+
+public typealias Constraint = (Holding) -> Bool
+public typealias ConstraintSet = [Constraint]
+public typealias ConstraintBatch = [ConstraintSet]
+public typealias ConstraintCollection = [Direction:ConstraintBatch]
+
+@available(iOS 16.0, *)
+@available(macOS 13.0, *)
+public extension ConstraintSet {
+    func validate(holding: Holding) -> Bool {
+        for f in self {
+            if !f(holding) {
+                return false
+            }
+        }
+        return true
+    }
+    
+    static func parse(_ text: String) -> ConstraintSet {
+        return Dealer.getConstraint(text: text)
+    }
+}
+
+@available(iOS 16.0, *)
+@available(macOS 13.0, *)
+public extension ConstraintBatch {
+    func validate(holding: Holding) -> Bool {
+        for cs in self {
+            if cs.validate(holding: holding) {
+                return true
+            }
+        }
+        return false
+    }
+    
+    static func parse(_ text: String) -> ConstraintBatch {
+        return text.split(separator: Dealer.REGEX_OR).map { ConstraintSet.parse(String($0)) }
+    }
+}
+
+@available(iOS 16.0, *)
+@available(macOS 13.0, *)
+public extension ConstraintCollection {
+    public func validate(deal: Deal) -> Bool {
+        for kvp in self {
+            let holding = deal.getHolding(dir: kvp.key)
+            if !kvp.value.validate(holding: holding) {
+                return false
+            }
+        }
+        return true
+    }
+}
+
+@available(iOS 16.0, *)
+@available(macOS 13.0, *)
+public class Dealer {
+    static let REGEX_BINARY_OPERATOR = #/(hcp|spades|hearts|diamonds|clubs|\d+)\s*(<|>|=|>=|<=)\s*(hcp|spades|hearts|diamonds|clubs|\d+)/#
+    static let REGEX_SHAPE = #/shape\s*([\dx])([\dx])([\dx])([\dx])/#
+    static let REGEX_SHAPE_ANY = #/shape any\s*([\dx])([\dx])([\dx])([\dx])/#
+    static let REGEX_BALANCED = #/\sbal|\sbalanced/#
+    static let REGEX_UNBALANCED = #/unbal|unbalanced/#
+    static let REGEX_RANGE = #/(\d+)-(\d+)\s+(hcp|spades|hearts|diamonds|clubs)/#
+    static let REGEX_OR = #/\sor\s|\s\|\|\s/#
+    
+    public static func deal(count: Int = 1, predeal: Deal = Deal()) -> [Deal] {
+        var deals: [Deal] = []
+        
+        for _ in 0..<count {
+            deals.append(Deal.random(predeal: predeal))
+        }
+        
+        return deals
+    }
+    
+    public static func deal(count: Int = 1, predeal: Deal = Deal(), constraints: ConstraintCollection) -> [Deal] {
+        var deals: [Deal] = []
+        
+        var c = 0
+        for _ in 0..<count*1000000 {
+            let deal = Deal.random(predeal: predeal)
+            if constraints.validate(deal: deal) {
+                deals.append(deal)
+                c += 1
+            }
+            if c == count {
+                break
+            }
+        }
+        
+        return deals
+    }
+    
+    public static func getArgf(_ arg: Substring) -> (Holding) -> Int {
+        switch arg {
+        case "hcp": { h in h.hcp() }
+        case "spades": { h in h.spades().nonzeroBitCount }
+        case "hearts": { h in h.hearts().nonzeroBitCount }
+        case "diamonds": { h in h.diamonds().nonzeroBitCount }
+        case "clubs": { h in h.clubs().nonzeroBitCount }
+        default: { h in Int(arg) ?? 0 }
+        }
+    }
+    
+    public static func getOpf(_ op: Substring) -> (Int, Int) -> Bool {
+        switch op {
+        case "=": { a, b in a == b }
+        case ">": { a, b in a > b }
+        case "<": { a, b in a < b }
+        case ">=": { a, b in a >= b }
+        case "<=": { a, b in a <= b }
+        default: { a, b in true }
+        }
+    }
+    
+    public static func matchBinOp(_ text: String, _ constraint: inout [(UInt64) -> Bool]) {
+        let results = text.matches(of: REGEX_BINARY_OPERATOR)
+        for result in results {
+            let arg1 = result.output.1
+            let arg2 = result.output.3
+            let op = result.output.2
+            let arg1f: (Holding) -> Int = getArgf(arg1)
+            let arg2f: (Holding) -> Int = getArgf(arg2)
+            let opf: (Int, Int) -> Bool = getOpf(op)
+            let f: Constraint = { h in opf(arg1f(h), arg2f(h)) }
+            constraint.append(f)
+        }
+    }
+    
+    public static func matchShape(_ text: String, _ constraint: inout [(UInt64) -> Bool]) {
+        let results = text.matches(of: REGEX_SHAPE)
+        for result in results {
+            let arg1: (Holding) -> Bool = switch result.output.1 {
+            case "x": { h in true }
+            default: { h in h.spades().nonzeroBitCount == Int(result.output.1) ?? 0}
+            }
+            let arg2: (Holding) -> Bool = switch result.output.2 {
+            case "x": { h in true }
+            default: { h in h.hearts().nonzeroBitCount == Int(result.output.2) ?? 0}
+            }
+            let arg3: (Holding) -> Bool = switch result.output.3 {
+            case "x": { h in true }
+            default: { h in h.diamonds().nonzeroBitCount == Int(result.output.3) ?? 0}
+            }
+            let arg4: (Holding) -> Bool = switch result.output.4 {
+            case "x": { h in true }
+            default: { h in h.clubs().nonzeroBitCount == Int(result.output.4) ?? 0}
+            }
+            let f: Constraint = { h in arg1(h)&&arg2(h)&&arg3(h)&&arg4(h) }
+            constraint.append(f)
+        }
+    }
+    
+    public static func matchShapeAny(_ text: String, _ constraint: inout [(UInt64) -> Bool]) {
+        let results = text.matches(of: REGEX_SHAPE_ANY)
+        for result in results {
+            var shape: [Int] = []
+            if let arg1 = Int(result.output.1) { shape.append(arg1) }
+            if let arg2 = Int(result.output.2) { shape.append(arg2) }
+            if let arg3 = Int(result.output.3) { shape.append(arg3) }
+            if let arg4 = Int(result.output.4) { shape.append(arg4) }
+            
+            
+            let f: Constraint = { h in
+                var fmap = [Int:Int]()
+                for e in shape {
+                    fmap[e, default: 0] += 1
+                }
+                let hshape: [Int] = [h.spades().nonzeroBitCount, h.hearts().nonzeroBitCount, h.diamonds().nonzeroBitCount, h.clubs().nonzeroBitCount]
+                for element in hshape {
+                    if let count = fmap[element] {
+                        fmap[element] = count - 1
+                        if count - 1 == 0 {
+                            fmap.removeValue(forKey: element)
+                        }
+                        if fmap.isEmpty {
+                            return true
+                        }
+                    }
+                }
+                return fmap.isEmpty
+            }
+            constraint.append(f)
+        }
+    }
+    
+    public static func matchBalanced(_ text: String, _ constraint: inout [(UInt64) -> Bool]) {
+        if text.contains(REGEX_BALANCED) {
+            let f: Constraint = { hand in
+                let s = hand.spades().nonzeroBitCount
+                let h = hand.hearts().nonzeroBitCount
+                let d = hand.diamonds().nonzeroBitCount
+                let c = hand.clubs().nonzeroBitCount
+                return s >= 2 && s <= 5 && h >= 2 && h <= 5 && d >= 2 && d <= 5 && c >= 2 && c <= 5 && s + h >= 5 && s + d >= 5 && s + c >= 5 && h + d >= 5 && h + c >= 5 && d + c >= 5
+            }
+            constraint.append(f)
+        }
+    }
+    
+    public static func matchUnbalanced(_ text: String, _ constraint: inout [(UInt64) -> Bool]) {
+        if text.contains(REGEX_UNBALANCED) {
+            let f: Constraint = { hand in
+                let s = hand.spades().nonzeroBitCount
+                let h = hand.hearts().nonzeroBitCount
+                let d = hand.diamonds().nonzeroBitCount
+                let c = hand.clubs().nonzeroBitCount
+                return !(s >= 2 && s <= 5 && h >= 2 && h <= 5 && d >= 2 && d <= 5 && c >= 2 && c <= 5 && s + h >= 5 && s + d >= 5 && s + c >= 5 && h + d >= 5 && h + c >= 5 && d + c >= 5)
+            }
+            constraint.append(f)
+        }
+    }
+    
+    fileprivate static func matchRange(_ text: String, _ constraint: inout [(UInt64) -> Bool]) {
+        let results = text.matches(of: REGEX_RANGE)
+        for result in results {
+            let arg1: Int = Int(result.output.1)!
+            let arg2: Int = Int(result.output.2)!
+            let value = getArgf(result.output.3)
+            let f: Constraint = { h in
+                let val = value(h)
+                return arg1 <= val && val <= arg2
+            }
+            constraint.append(f)
+        }
+    }
+    
+    public static func getConstraint(text: String) -> ConstraintSet {
+        var constraint: ConstraintSet = []
+        
+        matchBinOp(text, &constraint)
+        matchShape(text, &constraint)
+        matchShapeAny(text, &constraint)
+        matchBalanced(text, &constraint)
+        matchUnbalanced(text, &constraint)
+        matchRange(text, &constraint)
+        
+        return constraint
+    }
+}
+
+
+public class BiddingSystem {
+    public struct Definition {
+        var description: String
+        var constraint: String
+        var prio: Int = 0
+    }
+    private var definitions: [Bidding:Definition] = [:]
+    
+    public func getDefinition(_ bidding: Bidding, exactMatch: Bool = true) -> Definition? {
+        if exactMatch {
+            let definition: Definition? = definitions[bidding]
+            return definition
+        }
+        
+        // match without leading passes
+        if let definition: Definition? = definitions[Array(bidding.drop(while: { $0 == BID_PASS }))] {
+            return definition
+        }
+        
+        // todo: come up with more clever ways to suggest a sequence that is not an exact match
+        
+        return nil
+    }
+    
+    public func addDefinition(_ bidding: Bidding, _ definition: Definition) {
+        definitions[bidding] = definition
+    }
+}
+
+
