@@ -228,6 +228,15 @@ public extension Bidding {
         return isComplete() ? contract : nil
     }
     
+    func isOver() -> Bool {
+        let c = self.count
+        if c < 4 {
+            return false
+        }
+        return self[c-1] == BID_PASS && self[c-2] == BID_PASS && self[c-3] == BID_PASS
+        
+    }
+    
     func getLastBid() -> Bid {
         if let idx = self.lastIndex(where: { $0 > BID_REDOUBLE }) {
             return self[idx]
@@ -1949,6 +1958,34 @@ public class BiddingSystem {
             }
         }
         return nil
+    }
+    
+    public func getBidding(deal: Deal) -> [(Bid, Definition)] {
+        var bidding: Bidding = []
+        var defs: [(Bid, Definition)] = []
+        var dir = DIRECTION_NORTH
+        while !bidding.isOver() {
+            if let bid: Bid = getBid(holding: deal.getHolding(dir: dir), sequence: bidding) {
+                bidding.append(bid)
+            } else {
+                bidding.append(BID_PASS)
+            }
+            if let def = getDefinition(bidding) {
+                defs.append((bidding.last!, def))
+            } else {
+                defs.append((bidding.last!, Definition(description: "Ingen förklaring", constraint: "")))
+            }
+            if dir == DIRECTION_NORTH {
+                dir = DIRECTION_EAST
+            } else if dir == DIRECTION_EAST {
+                dir = DIRECTION_SOUTH
+            } else if dir == DIRECTION_SOUTH {
+                dir = DIRECTION_WEST
+            } else if dir == DIRECTION_WEST {
+                dir = DIRECTION_NORTH
+            }
+        }
+        return defs
     }
     
     public func parseText(text: String) {

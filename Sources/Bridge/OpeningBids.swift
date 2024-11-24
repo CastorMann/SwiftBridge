@@ -21,6 +21,7 @@ public class OpeningBids {
 @available(iOS 16.0, *)
 public class NTBidding {
     public static let System: BiddingSystem = BiddingSystem.parseText(text: """
+P:0-11 hcp:0-11 hp
 1N:15-17 hcp bal:15-17 hp, jämn hand
 
 1N-P:hcp<9 spades<5 hearts<5:0-8 hp
