@@ -64,6 +64,46 @@ P:0-11 hcp:0-11 hp
 1N-2C-2S-3S:8-9 hcp spades>3:invit, 8-9 stp med trumfstöd
 1N-2C-2S-4S:10-15 hcp spades>3:slutbud, 10-15 stp med trumfstöd
 
+1N-2C-2D-2N-P:hcp=15:minimum, 15 hp
+1N-2C-2D-2N-3N:hcp>15:tillägg, 16-17 hp
+
+1N-2C-2H-2N-P:hcp=15 spades<4:minimum, 15 hp
+1N-2C-2H-2N-3N:hcp>15 spades<4:tillägg, 16-17 hp
+1N-2C-2H-2N-3S:hcp=15 spades>3:minimum med stöd. 15-16 stp och 4 spader
+1N-2C-2H-2N-4S:hcp>16 spades>3:tillägg med stöd. minst 17 stp och 4 spader
+1N-2C-2H-2N-3S-4S:hcp=9:slutbud, minst 10 stp
+
+1N-2C-2S-2N-P:hcp=15 spades<4:minimum, 15 hp
+1N-2C-2S-2N-3N:hcp>15 spades<4:tillägg, 16-17 hp
+
+1N-2D-2H::överföring accepterad, måste bjudas
+1N-2H-2S::överföring accepterad, måste bjudas
+
+1N-2D-2H-P:0-7 hcp:avlägg, 0-7 hp
+1N-2D-2H-2N:8-9 hcp hearts=5:invit, 8-9 hp och exakt 5 hjärter
+1N-2D-2H-2N-P:hcp=15 hearts=2:avlägg, 15 hp och exakt 2 hjärter
+1N-2D-2H-2N-3N:hcp>15 hearts=2:tillägg, 16-17 hp och exakt 2 hjärter
+1N-2D-2H-2N-3H:hcp=15 hearts>2:minimum med stöd, 15-16 stp och minst 3 hjärter
+1N-2D-2H-2N-3H-4H:hcp=9:slutbud, minst 10 stp
+1N-2D-2H-2N-4H:hcp>15 hearts>2:tillägg med stöd, minst 17 stp och minst 3 hjärter
+1N-2D-2H-3N:10-15 hcp hearts=5:förslag till slutbud, 10-15 hp och exakt 5 hjärter
+1N-2D-2H-3H:7-8 hcp hearts>5:invit, 8-9 stp och minst 6 hjärter
+1N-2D-2H-3H-P:hcp=15:minimum, 15-16 stp
+1N-2D-2H-3H-4H:hcp>15:tillägg, minst 17 stp
+1N-2D-2H-4H:9-14 hcp hearts>5:slutbud, 10-15 stp och minst 6 hjärter
+
+1N-2H-2S-P:0-7 hcp:avlägg, 0-7 hp
+1N-2H-2S-2N:8-9 hcp spades=5:invit, 8-9 hp och exakt 5 spader
+1N-2H-2S-2N-P:hcp=15 spades=2:avlägg, 15 hp och exakt 2 spader
+1N-2H-2S-2N-3N:hcp>15 spades=2:tillägg, 16-17 hp och exakt 2 spader
+1N-2H-2S-2N-3S:hcp=15 spades>2:minimum med stöd, 15-16 stp och minst 3 spader
+1N-2H-2S-2N-3S-4H:hcp=9:slutbud, minst 10 stp
+1N-2H-2S-2N-4S:hcp>15 spades>2:tillägg med stöd, minst 17 stp och minst 3 spader
+1N-2H-2S-3N:10-15 hcp spades=5:förslag till slutbud, 10-15 hp och exakt 5 spader
+1N-2H-2S-3S:7-8 hcp spades>5:invit, 8-9 stp och minst 6 spader
+1N-2H-2S-3S-P:hcp=15:minimum, 15-16 stp
+1N-2H-2S-3S-4S:hcp>15:tillägg, minst 17 stp
+1N-2H-2S-4S:9-14 hcp spades>5:slutbud, 10-15 stp och minst 6 spader
 
 """)
 }
