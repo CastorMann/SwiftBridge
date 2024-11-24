@@ -129,6 +129,23 @@ public let BID_4_NT: Bid = 144
 public let BID_5_NT: Bid = 176
 public let BID_6_NT: Bid = 208
 public let BID_7_NT: Bid = 240
+public let BIDS_ALL: Bidding = [
+    BID_PASS, BID_DOUBLE, BID_REDOUBLE,
+    BID_1_CLUBS, BID_1_DIAMONDS, BID_1_HEARTS, BID_1_SPADES, BID_1_NT,
+    BID_2_CLUBS, BID_2_DIAMONDS, BID_2_HEARTS, BID_2_SPADES, BID_2_NT,
+    BID_3_CLUBS, BID_3_DIAMONDS, BID_3_HEARTS, BID_3_SPADES, BID_3_NT,
+    BID_4_CLUBS, BID_4_DIAMONDS, BID_4_HEARTS, BID_4_SPADES, BID_4_NT,
+    BID_5_CLUBS, BID_5_DIAMONDS, BID_5_HEARTS, BID_5_SPADES, BID_5_NT,
+    BID_6_CLUBS, BID_6_DIAMONDS, BID_6_HEARTS, BID_6_SPADES, BID_6_NT,
+    BID_7_CLUBS, BID_7_DIAMONDS, BID_7_HEARTS, BID_7_SPADES, BID_7_NT
+]
+public let BIDS_LEVEL_1: Bidding = [BID_1_CLUBS, BID_1_DIAMONDS, BID_1_HEARTS, BID_1_SPADES, BID_1_NT]
+public let BIDS_LEVEL_2: Bidding = [BID_2_CLUBS, BID_2_DIAMONDS, BID_2_HEARTS, BID_2_SPADES, BID_2_NT]
+public let BIDS_LEVEL_3: Bidding = [BID_3_CLUBS, BID_3_DIAMONDS, BID_3_HEARTS, BID_3_SPADES, BID_3_NT]
+public let BIDS_LEVEL_4: Bidding = [BID_4_CLUBS, BID_4_DIAMONDS, BID_4_HEARTS, BID_4_SPADES, BID_4_NT]
+public let BIDS_LEVEL_5: Bidding = [BID_5_CLUBS, BID_5_DIAMONDS, BID_5_HEARTS, BID_5_SPADES, BID_5_NT]
+public let BIDS_LEVEL_6: Bidding = [BID_6_CLUBS, BID_6_DIAMONDS, BID_6_HEARTS, BID_6_SPADES, BID_6_NT]
+public let BIDS_LEVEL_7: Bidding = [BID_7_CLUBS, BID_7_DIAMONDS, BID_7_HEARTS, BID_7_SPADES, BID_7_NT]
 
 public typealias Direction = UInt8
 public let DIRECTION_NORTH: Direction = 1
@@ -357,6 +374,23 @@ public extension Strain {
     
     func isNT() -> Bool {
         return strain() & STRAIN_NT != 0
+    }
+    
+    func strainToShortString() -> String {
+        switch self {
+        case STRAIN_CLUB:
+            return "C"
+        case STRAIN_DIAMOND:
+            return "D"
+        case STRAIN_HEART:
+            return "H"
+        case STRAIN_SPADE:
+            return "S"
+        case STRAIN_NT:
+            return "NT"
+        default:
+            return ""
+        }
     }
 }
 
@@ -610,6 +644,74 @@ public extension Bid {
         let overtrickScore = calculateOvertrickScore(overtricks, strain, modifier, vul)
 
         return baseScore + overtrickScore + bonusScore
+    }
+    
+    func bidToShortString() -> String {
+        switch self {
+        case BID_PASS:
+            return "P"
+        case BID_DOUBLE:
+            return "X"
+        case BID_REDOUBLE:
+            return "XX"
+        default:
+            return "\(self.level())\(self.strain().strainToShortString())"
+        }
+    }
+    
+    @available(macOS 13.0, *)
+    @available(iOS 16.0, *)
+    static func fromShortString(s: String) -> Bid {
+        switch s {
+        case "P": return BID_PASS
+        case "X": return BID_DOUBLE
+        case "XX": return BID_REDOUBLE
+            
+        case "1C": return BID_1_CLUBS
+        case "1D": return BID_1_DIAMONDS
+        case "1H": return BID_1_HEARTS
+        case "1S": return BID_1_SPADES
+        case "1N", "1NT": return BID_1_NT
+
+        case "2C": return BID_2_CLUBS
+        case "2D": return BID_2_DIAMONDS
+        case "2H": return BID_2_HEARTS
+        case "2S": return BID_2_SPADES
+        case "2N", "2NT": return BID_2_NT
+
+        case "3C": return BID_3_CLUBS
+        case "3D": return BID_3_DIAMONDS
+        case "3H": return BID_3_HEARTS
+        case "3S": return BID_3_SPADES
+        case "3N", "3NT": return BID_3_NT
+
+        case "4C": return BID_4_CLUBS
+        case "4D": return BID_4_DIAMONDS
+        case "4H": return BID_4_HEARTS
+        case "4S": return BID_4_SPADES
+        case "4N", "4NT": return BID_4_NT
+
+        case "5C": return BID_5_CLUBS
+        case "5D": return BID_5_DIAMONDS
+        case "5H": return BID_5_HEARTS
+        case "5S": return BID_5_SPADES
+        case "5N", "5NT": return BID_5_NT
+
+        case "6C": return BID_6_CLUBS
+        case "6D": return BID_6_DIAMONDS
+        case "6H": return BID_6_HEARTS
+        case "6S": return BID_6_SPADES
+        case "6N", "6NT": return BID_6_NT
+
+        case "7C": return BID_7_CLUBS
+        case "7D": return BID_7_DIAMONDS
+        case "7H": return BID_7_HEARTS
+        case "7S": return BID_7_SPADES
+        case "7N", "7NT": return BID_7_NT
+
+        default: return 0
+        }
+
     }
 }
 
@@ -966,7 +1068,7 @@ public extension Deal {
         return sb
     }
     
-    public func toBytes() -> [UInt8] {
+    func toBytes() -> [UInt8] {
         var bytes: [UInt8] = []
         for i in 0..<8 {
             bytes.append(UInt8((self.north >> (8 * i)) & 0xFF))
@@ -987,7 +1089,7 @@ public extension Deal {
         case invalidByteCount
     }
     
-    public static func from(bytes: [UInt8]) throws -> Deal {
+    static func from(bytes: [UInt8]) throws -> Deal {
         if bytes.count != 32 {
             throw ConversionError.invalidByteCount
         }
@@ -1118,7 +1220,7 @@ public enum ExportFormat {
 @available(iOS 16.0, *)
 @available(macOS 13.0, *)
 public extension [Deal] {
-    public static func importFromFile(_ url: URL, _ format: ExportFormat? = nil) throws -> [Deal] {
+    static func importFromFile(_ url: URL, _ format: ExportFormat? = nil) throws -> [Deal] {
         var deals: [Deal] = []
         
         switch format {
@@ -1156,21 +1258,15 @@ public extension [Deal] {
         return deals
     }
     
-    public static func importDUP(_ url: URL) throws -> [Deal] {
-        var deals: [Deal] = []
-        
-        return deals
+    static func importDUP(_ url: URL) throws -> [Deal] {
+        return []
     }
     
-    public static func importBIN(_ url: URL) throws -> [Deal] {
-        var deals: [Deal] = []
-        
-        return deals
+    static func importBIN(_ url: URL) throws -> [Deal] {
+        return []
     }
     
-    public static func importJSON(_ url: URL) throws -> [Deal] {
-        var deals: [Deal] = []
-        
+    static func importJSON(_ url: URL) throws -> [Deal] {
         do {
             let data = try Data(contentsOf: url)
             let decoder = JSONDecoder()
@@ -1179,11 +1275,9 @@ public extension [Deal] {
         } catch {
             throw NSError(domain: "DealsImportError", code: 1001, userInfo: [NSLocalizedDescriptionKey : "Could not parse JSON data"])
         }
-        
-        return deals
     }
     
-    public static func importPBN(_ url: URL) throws -> [Deal] {
+    static func importPBN(_ url: URL) throws -> [Deal] {
         var deals: [Deal] = []
         
         do {
@@ -1203,7 +1297,7 @@ public extension [Deal] {
         return deals
     }
     
-    public func exportToFile(_ url: URL, _ format: ExportFormat? = nil) throws {
+    func exportToFile(_ url: URL, _ format: ExportFormat? = nil) throws {
         switch format {
         case .PBN:
             try! self.exportPBN(url)
@@ -1237,11 +1331,11 @@ public extension [Deal] {
         }
     }
     
-    public static func from(bytes: [UInt8]) throws -> [Deal] {
+    static func from(bytes: [UInt8]) throws -> [Deal] {
         var deals: [Deal] = []
         
         var readPointer = 0
-        var readEnd = bytes.count
+        let readEnd = bytes.count
         
         while readPointer + 32 < readEnd {
             do {
@@ -1258,7 +1352,7 @@ public extension [Deal] {
         return deals
     }
     
-    public func toBytes() -> [UInt8] {
+    func toBytes() -> [UInt8] {
         var bytes: [UInt8] = []
         for deal in self {
             for byte in deal.toBytes() {
@@ -1268,8 +1362,8 @@ public extension [Deal] {
         return bytes
     }
     
-    public func exportBIN(_ url: URL) throws {
-        var bytes: [UInt8] = toBytes()
+    func exportBIN(_ url: URL) throws {
+        let bytes: [UInt8] = toBytes()
         
         let data = Data(bytes)
         do {
@@ -1279,7 +1373,7 @@ public extension [Deal] {
         }
     }
     
-    public func exportJSON(_ url: URL) throws {
+    func exportJSON(_ url: URL) throws {
         do {
             let encoder = JSONEncoder()
             let data = try encoder.encode(self)
@@ -1289,7 +1383,7 @@ public extension [Deal] {
         }
     }
     
-    public func exportPBN(_ url: URL) throws {
+    func exportPBN(_ url: URL) throws {
         var sb = ""
         var bn = 1
         for deal in self {
@@ -1309,7 +1403,7 @@ public extension [Deal] {
         }
     }
     
-    public func exportDUP(_ url: URL) throws {
+    func exportDUP(_ url: URL) throws {
         var sb = ""
         for deal in self {
             sb += deal.toDUP()
@@ -1330,7 +1424,7 @@ public extension [Deal] {
 }
 
 public extension DealState {
-    public func toBytes() -> [UInt8] {
+    func toBytes() -> [UInt8] {
         var bytes: [UInt8] = []
         
         bytes.append(self.dealNumber)
@@ -1351,7 +1445,7 @@ public extension DealState {
 }
 
 public extension [DealState] {
-    public func exportToFile(at url: URL) throws {
+    func exportToFile(at url: URL) throws {
         let bytes = toBytes()
         let data = Data(bytes)
         do {
@@ -1361,7 +1455,7 @@ public extension [DealState] {
         }
     }
     
-    public static func importFromFile(at url: URL) throws -> [DealState] {
+    static func importFromFile(at url: URL) throws -> [DealState] {
         do {
             let data = try Data(contentsOf: url)
             let bytes = [UInt8](data)
@@ -1371,7 +1465,7 @@ public extension [DealState] {
         }
     }
     
-    public func toBytes() -> [UInt8] {
+    func toBytes() -> [UInt8] {
         var bytes: [UInt8] = []
         
         for state in self {
@@ -1383,11 +1477,11 @@ public extension [DealState] {
         return bytes
     }
     
-    public static func from(bytes: [UInt8]) throws -> [DealState] {
+    static func from(bytes: [UInt8]) throws -> [DealState] {
         var states: [DealState] = []
         
         var readPointer = 0
-        var readEnd = bytes.count
+        let readEnd = bytes.count
         while readPointer + 33 < readEnd {
             do {
                 // read deal number
@@ -1426,7 +1520,7 @@ public extension [DealState] {
 }
 
 public extension ExtendedDealState {
-    public func toBytes() -> [UInt8] {
+    func toBytes() -> [UInt8] {
         var bytes: [UInt8] = []
         
         for byte in self.state.toBytes() {
@@ -1454,7 +1548,7 @@ public extension ExtendedDealState {
 }
 
 public extension [ExtendedDealState] {
-    public func exportToFile(at url: URL) throws {
+    func exportToFile(at url: URL) throws {
         let bytes = toBytes()
         let data = Data(bytes)
         do {
@@ -1464,7 +1558,7 @@ public extension [ExtendedDealState] {
         }
     }
     
-    public static func importFromFile(at url: URL) throws -> [ExtendedDealState] {
+    static func importFromFile(at url: URL) throws -> [ExtendedDealState] {
         do {
             let data = try Data(contentsOf: url)
             let bytes = [UInt8](data)
@@ -1474,7 +1568,7 @@ public extension [ExtendedDealState] {
         }
     }
     
-    public func toBytes() -> [UInt8] {
+    func toBytes() -> [UInt8] {
         var bytes: [UInt8] = []
         
         for estate in self {
@@ -1486,11 +1580,11 @@ public extension [ExtendedDealState] {
         return bytes
     }
     
-    public static func from(bytes: [UInt8]) throws -> [ExtendedDealState] {
+    static func from(bytes: [UInt8]) throws -> [ExtendedDealState] {
         var estates: [ExtendedDealState] = []
         
         var readPointer = 0
-        var readEnd = bytes.count
+        let readEnd = bytes.count
         
         while readPointer + 39 < readEnd {
             do {
@@ -1590,7 +1684,7 @@ public extension ConstraintBatch {
 @available(iOS 16.0, *)
 @available(macOS 13.0, *)
 public extension ConstraintCollection {
-    public func validate(deal: Deal) -> Bool {
+    func validate(deal: Deal) -> Bool {
         for kvp in self {
             let holding = deal.getHolding(dir: kvp.key)
             if !kvp.value.validate(holding: holding) {
@@ -1611,6 +1705,17 @@ public class Dealer {
     static let REGEX_UNBALANCED = #/unbal|unbalanced/#
     static let REGEX_RANGE = #/(\d+)-(\d+)\s+(hcp|spades|hearts|diamonds|clubs)/#
     static let REGEX_OR = #/\sor\s|\s\|\|\s/#
+    
+    public static func deal(constraint: String) -> Deal {
+        let cb: ConstraintBatch = ConstraintBatch.parse(constraint)
+        for _ in 0..<1000000 {
+            let deal = Deal.random()
+            if cb.validate(holding: deal.north) {
+                return deal
+            }
+        }
+        return Deal()
+    }
     
     public static func deal(count: Int = 1, predeal: Deal = Deal()) -> [Deal] {
         var deals: [Deal] = []
@@ -1788,6 +1893,8 @@ public class Dealer {
 }
 
 
+@available(macOS 13.0, *)
+@available(iOS 16.0, *)
 public class BiddingSystem {
     public struct Definition {
         var description: String
@@ -1796,14 +1903,23 @@ public class BiddingSystem {
     }
     private var definitions: [Bidding:Definition] = [:]
     
-    public func getDefinition(_ bidding: Bidding, exactMatch: Bool = true) -> Definition? {
-        if exactMatch {
-            let definition: Definition? = definitions[bidding]
+    init(definitions: [Bidding : Definition]) {
+        self.definitions = definitions
+    }
+    
+    init() {
+        
+    }
+    
+    public func getDefinition(_ bidding: Bidding, exactMatch: Bool = false) -> Definition? {
+        if let definition: Definition = definitions[bidding] {
             return definition
+        } else if exactMatch {
+            return nil
         }
         
         // match without leading passes
-        if let definition: Definition? = definitions[Array(bidding.drop(while: { $0 == BID_PASS }))] {
+        if let definition: Definition = definitions[Array(bidding.drop(while: { $0 == BID_PASS }))] {
             return definition
         }
         
@@ -1815,6 +1931,62 @@ public class BiddingSystem {
     public func addDefinition(_ bidding: Bidding, _ definition: Definition) {
         definitions[bidding] = definition
     }
+    
+    public func getBid(holding: Holding, sequence: Bidding) -> Bid? {
+        var defs: [(Bid, Definition)] = []
+        for bid in BIDS_ALL {
+            var copy = sequence
+            copy.append(bid)
+            if let def = getDefinition(copy) {
+                defs.append((bid, def))
+            }
+        }
+        defs.sort(by: {a, b in a.1.prio > b.1.prio })
+        for def in defs {
+            let cb = ConstraintBatch.parse(def.1.constraint)
+            if cb.validate(holding: holding) {
+                return def.0
+            }
+        }
+        return nil
+    }
+    
+    public func parseText(text: String) {
+        let lines = text.split(separator: "\n")
+            
+        for line in lines {
+            let parts = line.split(separator: ":")
+            if parts.count < 3 {
+                continue
+            }
+            let sequence = parts[0].trimmingCharacters(in: .whitespaces)
+            let constraint = parts[1].trimmingCharacters(in: .whitespaces)
+            let description = parts[2].trimmingCharacters(in: .whitespaces)
+            
+            let bids = sequence.split(separator: "-")
+            var bidding: Bidding = []
+            for bid in bids {
+                let b = Bid.fromShortString(s: bid.trimmingCharacters(in: .whitespaces))
+                bidding.append(b)
+                bidding.append(BID_PASS)
+            }
+            if bidding.count > 0 {
+                bidding.removeLast()
+            }
+            
+            
+            let def = Definition(description: String(description), constraint: String(constraint))
+            addDefinition(bidding, def)
+        }
+    }
+    
+    public static func parseText(text: String) -> BiddingSystem {
+        let sys = BiddingSystem()
+        sys.parseText(text: text)
+        return sys
+    }
+    
+    
 }
 
 
