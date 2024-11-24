@@ -1906,9 +1906,9 @@ public class Dealer {
 @available(iOS 16.0, *)
 public class BiddingSystem {
     public struct Definition {
-        var description: String
-        var constraint: String
-        var prio: Int = 0
+        public var description: String
+        public var constraint: String
+        public var prio: Int = 0
     }
     private var definitions: [Bidding:Definition] = [:]
     
