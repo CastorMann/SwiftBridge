@@ -76,8 +76,10 @@ P:0-11 hcp:0-11 hp
 1N-2C-2S-2N-P:hcp=15 spades<4:minimum, 15 hp
 1N-2C-2S-2N-3N:hcp>15 spades<4:tillägg, 16-17 hp
 
-1N-2D-2H::överföring accepterad, måste bjudas
-1N-2H-2S::överföring accepterad, måste bjudas
+1N-2D-2H:hcp=15 or hearts<4:överföring accepterad
+1N-2D-3H:hcp>15 hearts>3:superaccept, minst 17 stp och minst 4 hjärter
+1N-2H-2S:hcp=15 or spades<4:överföring accepterad
+1N-2H-3S:hcp>15 spades>3:superaccpet, minst 17 stp och minst 4 spader
 
 1N-2D-2H-P:0-7 hcp:avlägg, 0-7 hp
 1N-2D-2H-2N:8-9 hcp hearts=5:invit, 8-9 hp och exakt 5 hjärter
