@@ -2010,9 +2010,13 @@ public class BiddingSystem {
             if bidding.count > 0 {
                 bidding.removeLast()
             }
+            let prioPattern = #/\[P(-?\d+)\]/#
+            var prio = 0
+            if let match = constraint.firstMatch(of: prioPattern) {
+                prio = Int(match.output.1)!
+            }
             
-            
-            let def = Definition(description: String(description), constraint: String(constraint))
+            let def = Definition(description: String(description), constraint: String(constraint), prio: prio)
             addDefinition(bidding, def)
         }
     }

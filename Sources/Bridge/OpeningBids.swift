@@ -24,7 +24,7 @@ public class NTBidding {
 P:0-11 hcp:0-11 hp
 1N:15-17 hcp bal:15-17 hp, jämn hand
 
-1N-P:hcp<9 spades<5 hearts<5:0-8 hp
+1N-P:hcp<9 spades<5 hearts<5 [P-10]:0-8 hp
 1N-2C:hcp>7 spades=4 or hcp>7 hearts=4:högfärgsfråga
 1N-2D:hearts>4:överföring, minst 5 hjärter
 1N-2H:spades>4:överföring, minst 5 spader
