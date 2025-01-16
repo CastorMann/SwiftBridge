@@ -288,6 +288,23 @@ public extension Bidding {
         return self[count-1] == BID_PASS && self[count-2] == BID_PASS && self[count-3] == BID_PASS
     }
     
+    func getPrintableString() -> String {
+        var sb: String = "N   E   S   W\n"
+        var c = 0
+        for b in self {
+            sb += b.bidToShortString()
+            sb += b == BID_PASS || b == BID_DOUBLE ? "   " :
+            b.strain() == STRAIN_NT ? " " :
+            "  "
+            c += 1
+            if c == 4 {
+                sb += "\n"
+                c = 0
+            }
+        }
+        return sb
+    }
+    
     func isValid() -> Bool {
         if isEmpty {
             return true
@@ -446,6 +463,28 @@ public extension Holding {
             (self & JACKS).nonzeroBitCount
     }
     
+    func distributionPoints(strain: Strain) -> Int {
+        func f(_ x: Int, _ y: Int) -> Int {
+            return x > y ? x : y
+        }
+        var fp = 0
+        fp += f(3 - spades().nonzeroBitCount, 0)
+        fp += f(3 - hearts().nonzeroBitCount, 0)
+        fp += f(3 - diamonds().nonzeroBitCount, 0)
+        fp += f(3 - clubs().nonzeroBitCount, 0)
+        fp -= f(3 - getSuit(suit: strain).nonzeroBitCount, 0)
+        
+        return fp
+    }
+    
+    func trumpPoints(strain: Strain, count: Int) -> Int {
+        return getSuit(suit: strain).nonzeroBitCount - count
+    }
+    
+    func stp(strain: Strain, count: Int) -> Int {
+        return hcp() + distributionPoints(strain: strain) + trumpPoints(strain: strain, count: count)
+    }
+    
     func getSuit(suit: Strain) -> Holding {
         var mask: Holding = 0
         if suit & STRAIN_SPADE != 0 {
@@ -549,6 +588,66 @@ public extension Holding {
         let mask = ~CLUBS
         self &= mask
         self |= h
+    }
+    
+    
+    
+    static func fromShortString(_ s: String) -> Holding {
+        switch s {
+        case "2C": return HOLDING_TWO_OF_CLUBS
+        case "2D": return HOLDING_TWO_OF_DIAMONDS
+        case "2H": return HOLDING_TWO_OF_HEARTS
+        case "2S": return HOLDING_TWO_OF_SPADES
+        case "3C": return HOLDING_THREE_OF_CLUBS
+        case "3D": return HOLDING_THREE_OF_DIAMONDS
+        case "3H": return HOLDING_THREE_OF_HEARTS
+        case "3S": return HOLDING_THREE_OF_SPADES
+        case "4C": return HOLDING_FOUR_OF_CLUBS
+        case "4D": return HOLDING_FOUR_OF_DIAMONDS
+        case "4H": return HOLDING_FOUR_OF_HEARTS
+        case "4S": return HOLDING_FOUR_OF_SPADES
+        case "5C": return HOLDING_FIVE_OF_CLUBS
+        case "5D": return HOLDING_FIVE_OF_DIAMONDS
+        case "5H": return HOLDING_FIVE_OF_HEARTS
+        case "5S": return HOLDING_FIVE_OF_SPADES
+        case "6C": return HOLDING_SIX_OF_CLUBS
+        case "6D": return HOLDING_SIX_OF_DIAMONDS
+        case "6H": return HOLDING_SIX_OF_HEARTS
+        case "6S": return HOLDING_SIX_OF_SPADES
+        case "7C": return HOLDING_SEVEN_OF_CLUBS
+        case "7D": return HOLDING_SEVEN_OF_DIAMONDS
+        case "7H": return HOLDING_SEVEN_OF_HEARTS
+        case "7S": return HOLDING_SEVEN_OF_SPADES
+        case "8C": return HOLDING_EIGHT_OF_CLUBS
+        case "8D": return HOLDING_EIGHT_OF_DIAMONDS
+        case "8H": return HOLDING_EIGHT_OF_HEARTS
+        case "8S": return HOLDING_EIGHT_OF_SPADES
+        case "9C": return HOLDING_NINE_OF_CLUBS
+        case "9D": return HOLDING_NINE_OF_DIAMONDS
+        case "9H": return HOLDING_NINE_OF_HEARTS
+        case "9S": return HOLDING_NINE_OF_SPADES
+        case "TC": return HOLDING_TEN_OF_CLUBS
+        case "TD": return HOLDING_TEN_OF_DIAMONDS
+        case "TH": return HOLDING_TEN_OF_HEARTS
+        case "TS": return HOLDING_TEN_OF_SPADES
+        case "JC": return HOLDING_JACK_OF_CLUBS
+        case "JD": return HOLDING_JACK_OF_DIAMONDS
+        case "JH": return HOLDING_JACK_OF_HEARTS
+        case "JS": return HOLDING_JACK_OF_SPADES
+        case "QC": return HOLDING_QUEEN_OF_CLUBS
+        case "QD": return HOLDING_QUEEN_OF_DIAMONDS
+        case "QH": return HOLDING_QUEEN_OF_HEARTS
+        case "QS": return HOLDING_QUEEN_OF_SPADES
+        case "KC": return HOLDING_KING_OF_CLUBS
+        case "KD": return HOLDING_KING_OF_DIAMONDS
+        case "KH": return HOLDING_KING_OF_HEARTS
+        case "KS": return HOLDING_KING_OF_SPADES
+        case "AC": return HOLDING_ACE_OF_CLUBS
+        case "AD": return HOLDING_ACE_OF_DIAMONDS
+        case "AH": return HOLDING_ACE_OF_HEARTS
+        case "AS": return HOLDING_ACE_OF_SPADES
+        default: return 0
+        }
     }
 }
 
@@ -935,6 +1034,23 @@ public struct Deal : Codable, Hashable, Equatable {
         
         return deal
     }
+    
+    public func getPrintableString() -> String {
+        return """
+        \(north.spades().toPBN(includeDots: false))
+        \(north.hearts().toPBN(includeDots: false))
+        \(north.diamonds().toPBN(includeDots: false))
+        \(north.clubs().toPBN(includeDots: false))
+\(west.spades().toPBN(includeDots: false))              \(east.spades().toPBN(includeDots: false))
+\(west.hearts().toPBN(includeDots: false))              \(east.hearts().toPBN(includeDots: false))
+\(west.diamonds().toPBN(includeDots: false))                \(east.diamonds().toPBN(includeDots: false))
+\(west.clubs().toPBN(includeDots: false))               \(east.clubs().toPBN(includeDots: false))
+        \(south.spades().toPBN(includeDots: false))
+        \(south.hearts().toPBN(includeDots: false))
+        \(south.diamonds().toPBN(includeDots: false))
+        \(south.clubs().toPBN(includeDots: false))
+"""
+    }
 }
 
 public struct DealState : Codable, Hashable {
@@ -1124,6 +1240,10 @@ public extension Deal {
         }
         
         return Deal(north, east, south, west)
+    }
+    
+    static func solve() {
+        
     }
     
 }
@@ -1653,7 +1773,7 @@ public extension [ExtendedDealState] {
 
 public typealias Constraint = (Holding) -> Bool
 public typealias ConstraintSet = [Constraint]
-public typealias ConstraintBatch = [ConstraintSet]
+public typealias ConstraintBatch = [[ConstraintSet]]
 public typealias ConstraintCollection = [Direction:ConstraintBatch]
 
 @available(iOS 16.0, *)
@@ -1678,15 +1798,22 @@ public extension ConstraintSet {
 public extension ConstraintBatch {
     func validate(holding: Holding) -> Bool {
         for cs in self {
-            if cs.validate(holding: holding) {
-                return true
+            var flag = false
+            for css in cs {
+                if css.validate(holding: holding) {
+                    flag = true
+                    break
+                }
+            }
+            if !flag {
+                return false
             }
         }
-        return false
+        return true
     }
     
     static func parse(_ text: String) -> ConstraintBatch {
-        return text.split(separator: Dealer.REGEX_OR).map { ConstraintSet.parse(String($0)) }
+        return text.split(separator: Dealer.REGEX_AND).map { $0.split(separator: Dealer.REGEX_OR).map({ ConstraintSet.parse(String($0)) })}
     }
 }
 
@@ -1713,7 +1840,18 @@ public class Dealer {
     static let REGEX_BALANCED = #/\sbal|\sbalanced/#
     static let REGEX_UNBALANCED = #/unbal|unbalanced/#
     static let REGEX_RANGE = #/(\d+)-(\d+)\s+(hcp|spades|hearts|diamonds|clubs)/#
+    
+    static let REGEX_HOLDS = #/holds\(([AKQJT98765432][SHDC](?:,[AKQJT98765432][SHDC])*)\)/#
+    static let REGEX_CUE = #/cue\((spades|hearts|diamonds|clubs)\)/#
+    static let REGEX_STOPPER = #/stopper\((spades|hearts|diamonds|clubs)\)/#
+    static let REGEX_KEYCARDS = #/kc\((spades|hearts|diamonds|clubs)\)\s*(<|>|=|>=|<=)\s*(\d+)/#
+    static let REGEX_HCP_SUIT = #/hcp\((spades|hearts|diamonds|clubs)\)\s*(<|>|=|>=|<=)\s*(\d+)/#
+    static let REGEX_STP = #/stp\((spades|hearts|diamonds|clubs),\s*(\d+)\)\s*(<|>|=|>=|<=)\s*(\d+)/#
+    static let REGEX_STP_RANGE = #/(\d+)-(\d+)\s+stp\((spades|hearts|diamonds|clubs),\s*(\d+)\)/#
+
+    
     static let REGEX_OR = #/\sor\s|\s\|\|\s/#
+    static let REGEX_AND = #/\sand\s|\s\&\&/#
     
     public static func deal(constraint: String) -> Deal {
         let cb: ConstraintBatch = ConstraintBatch.parse(constraint)
@@ -1762,6 +1900,26 @@ public class Dealer {
         case "diamonds": { h in h.diamonds().nonzeroBitCount }
         case "clubs": { h in h.clubs().nonzeroBitCount }
         default: { h in Int(arg) ?? 0 }
+        }
+    }
+    
+    public static func getHcpSuitf(_ arg: Substring) -> (Holding) -> Int {
+        switch arg {
+        case "spades": { h in h.spades().hcp() }
+        case "hearts": { h in h.hearts().hcp() }
+        case "diamonds": { h in h.diamonds().hcp() }
+        case "clubs": { h in h.clubs().hcp() }
+        default: { h in 0 }
+        }
+    }
+    
+    public static func getStpf(_ arg: Substring, count: Int) -> (Holding) -> Int {
+        switch arg {
+        case "spades": { h in h.stp(strain: STRAIN_SPADE, count: count) }
+        case "hearts": { h in h.stp(strain: STRAIN_HEART, count: count) }
+        case "diamonds": { h in h.stp(strain: STRAIN_DIAMOND, count: count) }
+        case "clubs": { h in h.stp(strain: STRAIN_CLUB, count: count) }
+        default: { h in 0 }
         }
     }
     
@@ -1887,6 +2045,135 @@ public class Dealer {
         }
     }
     
+    fileprivate static func matchHolds(_ text: String, _ constraint: inout [(UInt64) -> Bool]) {
+        let results = text.matches(of: REGEX_HOLDS)
+        for result in results {
+            let values: Holding = result.output.1.split(separator: ",").map {
+                return Holding.fromShortString(String($0))
+            }.reduce(Holding(0), { r, h in return r | h })
+            let f: Constraint = { h in
+                return h & values == values
+            }
+            constraint.append(f)
+        }
+    }
+    
+    fileprivate static func matchCue(_ text: String, _ constraint: inout [(UInt64) -> Bool]) {
+        let results = text.matches(of: REGEX_CUE)
+        for result in results {
+            let v = result.output.1
+            let f: Constraint = { h in
+                switch v {
+                case "spades": return h.spades().nonzeroBitCount < 2 || h & HOLDING_ACE_OF_SPADES != 0 || h & HOLDING_KING_OF_SPADES != 0
+                case "hearts": return h.hearts().nonzeroBitCount < 2 || h & HOLDING_ACE_OF_HEARTS != 0 || h & HOLDING_KING_OF_HEARTS != 0
+                case "diamonds": return h.diamonds().nonzeroBitCount < 2 || h & HOLDING_ACE_OF_DIAMONDS != 0 || h & HOLDING_KING_OF_DIAMONDS != 0
+                case "clubs": return h.clubs().nonzeroBitCount < 2 || h & HOLDING_ACE_OF_CLUBS != 0 || h & HOLDING_KING_OF_CLUBS != 0
+                default: return false
+                }
+            }
+            constraint.append(f)
+        }
+    }
+    
+    fileprivate static func matchStopper(_ text: String, _ constraint: inout [(UInt64) -> Bool]) {
+        let results = text.matches(of: REGEX_STOPPER)
+        for result in results {
+            let v = result.output.1
+            let f: Constraint = { h in
+                switch v {
+                case "spades":
+                    return h & HOLDING_ACE_OF_SPADES != 0 ||
+                    (h & HOLDING_KING_OF_SPADES != 0 && h.spades().nonzeroBitCount > 1) ||
+                    (h & HOLDING_QUEEN_OF_SPADES != 0 && h.spades().nonzeroBitCount > 2) ||
+                    (h & HOLDING_JACK_OF_SPADES != 0 && h.spades().nonzeroBitCount > 3)
+                case "hearts":
+                    return h & HOLDING_ACE_OF_HEARTS != 0 ||
+                    (h & HOLDING_KING_OF_HEARTS != 0 && h.hearts().nonzeroBitCount > 1) ||
+                    (h & HOLDING_QUEEN_OF_HEARTS != 0 && h.hearts().nonzeroBitCount > 2) ||
+                    (h & HOLDING_JACK_OF_HEARTS != 0 && h.hearts().nonzeroBitCount > 3)
+                case "diamonds":
+                    return h & HOLDING_ACE_OF_DIAMONDS != 0 ||
+                    (h & HOLDING_KING_OF_DIAMONDS != 0 && h.diamonds().nonzeroBitCount > 1) ||
+                    (h & HOLDING_QUEEN_OF_DIAMONDS != 0 && h.diamonds().nonzeroBitCount > 2) ||
+                    (h & HOLDING_JACK_OF_DIAMONDS != 0 && h.diamonds().nonzeroBitCount > 3)
+                case "clubs":
+                    return h & HOLDING_ACE_OF_CLUBS != 0 ||
+                    (h & HOLDING_KING_OF_CLUBS != 0 && h.clubs().nonzeroBitCount > 1) ||
+                    (h & HOLDING_QUEEN_OF_CLUBS != 0 && h.clubs().nonzeroBitCount > 2) ||
+                    (h & HOLDING_JACK_OF_CLUBS != 0 && h.clubs().nonzeroBitCount > 3)
+                default: return false
+                }
+            }
+            constraint.append(f)
+        }
+    }
+    
+    fileprivate static func matchKeycards(_ text: String, _ constraint: inout [(UInt64) -> Bool]) {
+        let results = text.matches(of: REGEX_KEYCARDS)
+        for result in results {
+            let opf = getOpf(result.output.2)
+            let arg2 = Int(result.output.3) ?? 0
+            let f: Constraint = { h in
+                var arg1 = (h & ACES).nonzeroBitCount
+                switch result.output.1 {
+                case "spades": arg1 += h & HOLDING_KING_OF_SPADES != 0 ? 1 : 0
+                case "hearts": arg1 += h & HOLDING_KING_OF_HEARTS != 0 ? 1 : 0
+                case "diamonds": arg1 += h & HOLDING_KING_OF_DIAMONDS != 0 ? 1 : 0
+                case "clubs": arg1 += h & HOLDING_KING_OF_CLUBS != 0 ? 1 : 0
+                default: return true
+                }
+                return opf(arg1, arg2)
+            }
+            constraint.append(f)
+        }
+    }
+    
+    fileprivate static func matchHcpSuit(_ text: String, _ constraint: inout [(UInt64) -> Bool]) {
+        let results = text.matches(of: REGEX_HCP_SUIT)
+        for result in results {
+            let opf = getOpf(result.output.2)
+            let arg1 = result.output.1
+            let arg2 = Int(result.output.3) ?? 0
+            let f: Constraint = { h in
+                switch arg1 {
+                case "spades": return opf(h.spades().hcp(), arg2)
+                case "hearts": return opf(h.hearts().hcp(), arg2)
+                case "diamonds": return opf(h.diamonds().hcp(), arg2)
+                case "clubs": return opf(h.clubs().hcp(), arg2)
+                default: return true
+                }
+            }
+            constraint.append(f)
+        }
+    }
+    
+    fileprivate static func matchStp(_ text: String, _ constraint: inout [(UInt64) -> Bool]) {
+        let results = text.matches(of: REGEX_STP)
+        for result in results {
+            let opf = getOpf(result.output.3)
+            let count = Int(result.output.2) ?? 0
+            let stpf = getStpf(result.output.1, count: count)
+            let arg3 = Int(result.output.4) ?? 0
+            let f: Constraint = { h in opf(stpf(h), arg3) }
+            constraint.append(f)
+        }
+    }
+    
+    fileprivate static func matchStpRange(_ text: String, _ constraint: inout [(UInt64) -> Bool]) {
+        let results = text.matches(of: REGEX_STP_RANGE)
+        for result in results {
+            let arg1: Int = Int(result.output.1) ?? 0
+            let arg2: Int = Int(result.output.2) ?? 0
+            let count: Int = Int(result.output.4) ?? 0
+            let stpf = getStpf(result.output.3, count: count)
+            let f: Constraint = { h in
+                let val = stpf(h)
+                return arg1 <= val && val <= arg2
+            }
+            constraint.append(f)
+        }
+    }
+    
     public static func getConstraint(text: String) -> ConstraintSet {
         var constraint: ConstraintSet = []
         
@@ -1896,6 +2183,13 @@ public class Dealer {
         matchBalanced(text, &constraint)
         matchUnbalanced(text, &constraint)
         matchRange(text, &constraint)
+        matchHolds(text, &constraint)
+        matchCue(text, &constraint)
+        matchStopper(text, &constraint)
+        matchKeycards(text, &constraint)
+        matchHcpSuit(text, &constraint)
+        matchStp(text, &constraint)
+        matchStpRange(text, &constraint)
         
         return constraint
     }
@@ -1904,42 +2198,178 @@ public class Dealer {
 
 @available(macOS 13.0, *)
 @available(iOS 16.0, *)
-public class BiddingSystem {
-    public struct Definition {
-        public var description: String
+public struct BiddingSystem: Codable {
+    public struct Definition: Codable, Hashable {
+        public var descriptionString: String
         public var constraint: String
         public var prio: Int = 0
+        
+        public var isEmpty: Bool {
+            descriptionString.isEmpty && constraint.isEmpty
+        }
+        
+        public init(description: String = "", constraint: String = "", prio: Int = 0) {
+            self.descriptionString = description
+            self.constraint = constraint
+            self.prio = prio
+        }
     }
+    public class Node: Codable, Hashable, Identifiable {
+        public var id: UUID = UUID()
+        public var children: [Node]? = []
+        public var bid: Bid
+        public var definition: Definition
+        public var parent: Node?
+        
+        public var bidding: Bidding {
+            var bids: Bidding = []
+            var currentNode: Node? = self
+            while let node = currentNode, node.parent != nil {
+                bids.insert(node.bid, at: 0)
+                currentNode = node.parent
+            }
+            return bids
+        }
+        
+        public var isRoot: Bool { parent == nil }
+        
+        public init(bid: Bid, definition: Definition, children: [Node] = [], parent: Node? = nil) {
+            self.children = children
+            self.bid = bid
+            self.definition = definition
+            self.parent = parent
+        }
+        
+        public var uncontestedChildren: [Node]? {
+            children?.first(where: { $0.bid == BID_PASS })?.children?.sorted(by: { a, b in
+                a.bid < b.bid
+            })
+        }
+        
+        public func getNode(_ bidding: Bidding) -> Node? {
+            var currentNode = self
+            for bid in bidding {
+                if let nextNode = currentNode.children?.first(where: { node in node.bid == bid }) {
+                    currentNode = nextNode
+                } else {
+                    return nil
+                }
+            }
+            return currentNode
+        }
+        
+        public func addDefinition(_ definition: Definition, at bidding: Bidding, shouldOverwrite: Bool = false) {
+            var currentNode = self
+            for bid in bidding {
+                if let nextNode = currentNode.children?.first(where: { node in node.bid == bid }) {
+                    currentNode = nextNode
+                } else {
+                    let nextNode = Node(bid: bid, definition: BiddingSystem.Definition(), parent: currentNode)
+                    if let index = currentNode.children?.firstIndex(where: { node in node.bid > bid }) {
+                        currentNode.children?.insert(nextNode, at: index)
+                    } else {
+                        currentNode.children?.append(nextNode)
+                    }
+                    currentNode = nextNode
+                }
+            }
+            if shouldOverwrite || currentNode.definition.isEmpty {
+                currentNode.definition = definition
+            }
+        }
+        
+        public func insertDefinition(_ definition: Definition, at bidding: Bidding) {
+            if let node = getNode(bidding) {
+                node.definition = definition
+            }
+        }
+        
+        public static func == (lhs: Node, rhs: Node) -> Bool {
+            return lhs.id == rhs.id && lhs.children == rhs.children && lhs.bid == rhs.bid && lhs.definition == rhs.definition && lhs.parent == rhs.parent
+        }
+        
+        public func hash(into hasher: inout Hasher) {
+            hasher.combine(id)
+            hasher.combine(children)
+            hasher.combine(bid)
+            hasher.combine(definition)
+            hasher.combine(parent)
+        }
+    }
+    
     private var definitions: [Bidding:Definition] = [:]
     
-    init(definitions: [Bidding : Definition]) {
-        self.definitions = definitions
+    public var definitionCount: Int {
+        return definitions.count(where: { !$0.value.isEmpty })
     }
     
-    init() {
+    public init() {
         
     }
     
-    public func getDefinition(_ bidding: Bidding, exactMatch: Bool = false) -> Definition? {
-        if let definition: Definition = definitions[bidding] {
-            return definition
-        } else if exactMatch {
-            return nil
+    public func buildTree() -> Node {
+        var root = Node(bid: BID_NONE, definition: Definition(), parent: nil)
+        
+        for (bidding, definition) in definitions {
+            var currentNode = root
+            for bid in bidding {
+                if let nextNode = currentNode.children?.first(where: { $0.bid == bid }) {
+                    currentNode = nextNode
+                } else {
+                    let newNode = Node(bid: bid, definition: Definition(), parent: currentNode)
+                    currentNode.children?.append(newNode)
+                    currentNode = newNode
+                }
+            }
+            currentNode.definition = definition
         }
         
-        // match without leading passes
-        if let definition: Definition = definitions[Array(bidding.drop(while: { $0 == BID_PASS }))] {
-            return definition
-        }
-        
-        // todo: come up with more clever ways to suggest a sequence that is not an exact match
-        
-        return nil
+        return root
     }
     
-    public func addDefinition(_ bidding: Bidding, _ definition: Definition) {
-        definitions[bidding] = definition
+    public mutating func addModule(_ system: BiddingSystem, overwrite: Bool = false) -> BiddingSystem {
+        for (bidding, definition) in system.definitions {
+            addDefinition(bidding, definition, shouldOverwrite: overwrite)
+        }
+        return self
     }
+    
+    public func getDefinition(_ bidding: Bidding) -> Definition? {
+        return definitions[bidding]
+    }
+    
+    public mutating func addDefinition(_ bidding: Bidding, _ definition: Definition, shouldOverwrite: Bool = false) {
+        guard !bidding.isEmpty else { return }
+        
+        if shouldOverwrite || (definitions[bidding]?.isEmpty ?? true) {
+            definitions[bidding] = definition
+        }
+    }
+    
+    public mutating func updateDefinitionDescription(_ description: String, for bidding: Bidding) {
+        var newDefinition = getDefinition(bidding) ?? Definition()
+        newDefinition.descriptionString = description
+        addDefinition(bidding, newDefinition, shouldOverwrite: true)
+    }
+    
+    public mutating func updateDefinitionConstraints(_ constraints: String, for bidding: Bidding) {
+        var newDefinition = getDefinition(bidding) ?? Definition()
+        newDefinition.constraint = constraints
+        addDefinition(bidding, newDefinition, shouldOverwrite: true)
+    }
+    
+    public mutating func updateDefinitionPriority(_ priority: Int, for bidding: Bidding) {
+        var newDefinition = getDefinition(bidding) ?? Definition()
+        newDefinition.prio = priority
+        addDefinition(bidding, newDefinition, shouldOverwrite: true)
+    }
+    
+    public mutating func removeDefinition(_ bidding: Bidding) {
+        guard !bidding.isEmpty else { return }
+        
+        definitions.removeValue(forKey: bidding)
+    }
+
     
     public func getBid(holding: Holding, sequence: Bidding) -> Bid? {
         var defs: [(Bid, Definition)] = []
@@ -1988,7 +2418,8 @@ public class BiddingSystem {
         return defs
     }
     
-    public func parseText(text: String) {
+    public static func parseText(text: String) -> BiddingSystem {
+        var sys = BiddingSystem()
         let lines = text.split(separator: "\n")
             
         for line in lines {
@@ -2017,17 +2448,10 @@ public class BiddingSystem {
             }
             
             let def = Definition(description: String(description), constraint: String(constraint), prio: prio)
-            addDefinition(bidding, def)
+            sys.addDefinition(bidding, def)
         }
-    }
-    
-    public static func parseText(text: String) -> BiddingSystem {
-        let sys = BiddingSystem()
-        sys.parseText(text: text)
         return sys
     }
-    
-    
 }
 
 
