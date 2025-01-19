@@ -451,6 +451,37 @@ public extension Direction {
         }
         return sb
     }
+    
+    func directionToLongString() -> String {
+        var sb = ""
+        if self & DIRECTION_NORTH != 0 {
+            sb += "North"
+        }
+        if self & DIRECTION_EAST != 0 {
+            sb += "East"
+        }
+        if self & DIRECTION_SOUTH != 0 {
+            sb += "South"
+        }
+        if self & DIRECTION_WEST != 0 {
+            sb += "West"
+        }
+        return sb
+    }
+    
+    func nextDirection() -> Direction {
+        if self == DIRECTION_NORTH {
+            return DIRECTION_EAST
+        } else if self == DIRECTION_EAST {
+            return DIRECTION_SOUTH
+        } else if self == DIRECTION_SOUTH {
+            return DIRECTION_WEST
+        } else if self == DIRECTION_WEST {
+            return DIRECTION_NORTH
+        } else {
+            return DIRECTION_NONE
+        }
+    }
 }
 
 
@@ -1892,6 +1923,10 @@ public class Dealer {
         return deals
     }
     
+    public static func deal(constraints: ConstraintCollection) -> Deal {
+        return deal(count: 1, constraints: constraints)[0]
+    }
+    
     public static func getArgf(_ arg: Substring) -> (Holding) -> Int {
         switch arg {
         case "hcp": { h in h.hcp() }
@@ -2198,7 +2233,7 @@ public class Dealer {
 
 @available(macOS 13.0, *)
 @available(iOS 16.0, *)
-public struct BiddingSystem: Codable {
+public struct BiddingSystem: Codable, Hashable {
     public struct Definition: Codable, Hashable {
         public var descriptionString: String
         public var constraint: String
@@ -2224,7 +2259,8 @@ public struct BiddingSystem: Codable {
         public var bidding: Bidding {
             var bids: Bidding = []
             var currentNode: Node? = self
-            while let node = currentNode, node.parent != nil {
+            while let node = currentNode {
+                if node.bid == BID_NONE { break }
                 bids.insert(node.bid, at: 0)
                 currentNode = node.parent
             }
@@ -2232,12 +2268,27 @@ public struct BiddingSystem: Codable {
         }
         
         public var isRoot: Bool { parent == nil }
+        public var isLeaf: Bool { children == nil || children!.isEmpty}
+        public var isUncontestedLeaf: Bool { uncontestedChildren == nil || uncontestedChildren!.isEmpty }
         
         public init(bid: Bid, definition: Definition, children: [Node] = [], parent: Node? = nil) {
             self.children = children
             self.bid = bid
             self.definition = definition
             self.parent = parent
+        }
+        
+        public var computeModule: BiddingSystem {
+            var module = BiddingSystem()
+            func recursiveAdd(_ node: Node, currentBidding: Bidding) {
+                module.addDefinition(currentBidding + [node.bid], node.definition)
+                for child in node.children ?? [] {
+                    recursiveAdd(child, currentBidding: currentBidding + [node.bid])
+                }
+            }
+            recursiveAdd(self, currentBidding: [])
+            
+            return module
         }
         
         public var uncontestedChildren: [Node]? {
@@ -2256,6 +2307,14 @@ public struct BiddingSystem: Codable {
                 }
             }
             return currentNode
+        }
+        
+        public func addModule(_ node: Node, shouldOverwrite: Bool = false, isUncontested: Bool = false) {
+            let path: Bidding = (isUncontested ? [BID_PASS] : []) + node.bidding
+            addDefinition(node.definition, at: path, shouldOverwrite: shouldOverwrite)
+            for child in node.children ?? [] {
+                addModule(child, shouldOverwrite: shouldOverwrite, isUncontested: isUncontested)
+            }
         }
         
         public func addDefinition(_ definition: Definition, at bidding: Bidding, shouldOverwrite: Bool = false) {
@@ -2285,19 +2344,15 @@ public struct BiddingSystem: Codable {
         }
         
         public static func == (lhs: Node, rhs: Node) -> Bool {
-            return lhs.id == rhs.id && lhs.children == rhs.children && lhs.bid == rhs.bid && lhs.definition == rhs.definition && lhs.parent == rhs.parent
+            return lhs.id == rhs.id
         }
         
         public func hash(into hasher: inout Hasher) {
             hasher.combine(id)
-            hasher.combine(children)
-            hasher.combine(bid)
-            hasher.combine(definition)
-            hasher.combine(parent)
         }
     }
     
-    private var definitions: [Bidding:Definition] = [:]
+    public var definitions: [Bidding:Definition] = [:]
     
     public var definitionCount: Int {
         return definitions.count(where: { !$0.value.isEmpty })
@@ -2317,7 +2372,12 @@ public struct BiddingSystem: Codable {
                     currentNode = nextNode
                 } else {
                     let newNode = Node(bid: bid, definition: Definition(), parent: currentNode)
-                    currentNode.children?.append(newNode)
+                    if let index = currentNode.children?.firstIndex(where: { $0.bid > bid }) {
+                        currentNode.children?.insert(newNode, at: index)
+                    } else {
+                        currentNode.children?.append(newNode)
+                    }
+                    
                     currentNode = newNode
                 }
             }
@@ -2327,15 +2387,14 @@ public struct BiddingSystem: Codable {
         return root
     }
     
-    public mutating func addModule(_ system: BiddingSystem, overwrite: Bool = false) -> BiddingSystem {
+    public mutating func addModule(_ system: BiddingSystem, overwrite: Bool = false, overwriteEmpty: Bool = false, initialPath: Bidding = []) {
         for (bidding, definition) in system.definitions {
-            addDefinition(bidding, definition, shouldOverwrite: overwrite)
+            addDefinition(initialPath + bidding, definition, shouldOverwrite: overwrite && (!definition.isEmpty || overwriteEmpty))
         }
-        return self
     }
     
-    public func getDefinition(_ bidding: Bidding) -> Definition? {
-        return definitions[bidding]
+    public func getDefinition(_ bidding: Bidding, exactMatch: Bool = false) -> Definition? {
+        return definitions[bidding] ?? (exactMatch ? nil : getDefinition(Array(bidding.drop(while: { $0 == BID_PASS})), exactMatch: true))
     }
     
     public mutating func addDefinition(_ bidding: Bidding, _ definition: Definition, shouldOverwrite: Bool = false) {
@@ -2344,6 +2403,10 @@ public struct BiddingSystem: Codable {
         if shouldOverwrite || (definitions[bidding]?.isEmpty ?? true) {
             definitions[bidding] = definition
         }
+    }
+    
+    public mutating func updateDefinition(_ definition: Definition, for bidding: Bidding) {
+        addDefinition(bidding, definition, shouldOverwrite: true)
     }
     
     public mutating func updateDefinitionDescription(_ description: String, for bidding: Bidding) {
@@ -2367,7 +2430,14 @@ public struct BiddingSystem: Codable {
     public mutating func removeDefinition(_ bidding: Bidding) {
         guard !bidding.isEmpty else { return }
         
-        definitions.removeValue(forKey: bidding)
+        let keys = definitions.keys.filter( { $0.starts(with: bidding) } )
+        for key in keys {
+            definitions.removeValue(forKey: key)
+        }
+    }
+    
+    public func isDefined(_ bidding: Bidding) -> Bool {
+        return !(getDefinition(bidding)?.isEmpty ?? true)
     }
 
     
@@ -2390,7 +2460,7 @@ public struct BiddingSystem: Codable {
         return nil
     }
     
-    public func getBidding(deal: Deal) -> [(Bid, Definition)] {
+    public func getBidding(deal: Deal, defaultDefinition: Definition = .init()) -> [(Bid, Definition)] {
         var bidding: Bidding = []
         var defs: [(Bid, Definition)] = []
         var dir = DIRECTION_NORTH
@@ -2403,17 +2473,9 @@ public struct BiddingSystem: Codable {
             if let def = getDefinition(bidding) {
                 defs.append((bidding.last!, def))
             } else {
-                defs.append((bidding.last!, Definition(description: "Ingen förklaring", constraint: "")))
+                defs.append((bidding.last!, defaultDefinition))
             }
-            if dir == DIRECTION_NORTH {
-                dir = DIRECTION_EAST
-            } else if dir == DIRECTION_EAST {
-                dir = DIRECTION_SOUTH
-            } else if dir == DIRECTION_SOUTH {
-                dir = DIRECTION_WEST
-            } else if dir == DIRECTION_WEST {
-                dir = DIRECTION_NORTH
-            }
+            dir = dir.nextDirection()
         }
         return defs
     }
