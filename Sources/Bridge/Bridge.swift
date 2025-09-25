@@ -1757,6 +1757,7 @@ public extension ExtendedDealState {
     }
 }
 
+@available(iOS 16.0, *)
 public extension [ExtendedDealState] {
     func exportToFile(at url: URL) throws {
         let bytes = toBytes()
