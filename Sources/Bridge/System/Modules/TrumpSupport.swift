@@ -20,8 +20,8 @@ public class TrumpSupport {
 1H-2H:6-10 stp(hearts, 3) hearts>2:enkelhöjning, 6-10 stp och minst 3 hjärter
 1H-3H:11-12 stp(hearts, 3) hearts>2:dubbelhöjning, 11-12 stp och minst 3 hjärter
 
-1H-2H:6-10 stp(spades, 3) spades>2:enkelhöjning, 6-10 stp och minst 3 spader
-1H-3H:11-12 stp(spades, 3) spades>2:dubbelhöjning, 11-12 stp och minst 3 spader
+1S-2S:6-10 stp(spades, 3) spades>2:enkelhöjning, 6-10 stp och minst 3 spader
+1S-3S:11-12 stp(spades, 3) spades>2:dubbelhöjning, 11-12 stp och minst 3 spader
 
 1C-2C-P:hcp<15:minimum, 12-14 hp
 1C-2C-3C:15-17 hcp: invit, 15-17 hp
