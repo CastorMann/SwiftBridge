@@ -2563,6 +2563,21 @@ public struct BiddingSystem: Codable, Hashable {
         return defs
     }
     
+    public func toText() -> String {
+        let content = definitions.keys
+            .sorted { a, b in a.lexicographicallyPrecedes(b) }
+            .map { k in
+                let bids = k.map { $0.bidToShortString() }
+                let bstring = bids.enumerated().map { (index, bid) in
+                    index.isMultiple(of: 2) ? bid : "(\(bid))"
+                }.joined(separator: "-")
+                
+                return "\(bstring):\(definitions[k]!.constraint) [P\(definitions[k]!.prio)]:\(definitions[k]!.descriptionString)"
+            }
+            .joined(separator: "\n")
+        return content
+    }
+    
     public static func parseText(text: String) -> BiddingSystem {
         var sys = BiddingSystem()
         let lines = text.split(separator: "\n")
@@ -2578,10 +2593,25 @@ public struct BiddingSystem: Codable, Hashable {
             
             let bids = sequence.split(separator: "-")
             var bidding: Bidding = []
+            var PREV_BID_WAS_OVERCALL = false
             for bid in bids {
-                let b = Bid.fromShortString(s: bid.trimmingCharacters(in: .whitespaces))
-                bidding.append(b)
-                bidding.append(BID_PASS)
+                // if b starts with "(" and ends with ")"
+                if bid.hasPrefix("(") && bid.hasSuffix(")") {
+                    if PREV_BID_WAS_OVERCALL {
+                        bidding.append(BID_PASS)
+                    }
+                    // drop prefix and suffix
+                    let innerBid = Bid.fromShortString(s: String(bid.dropFirst().dropLast()))
+                    bidding.append(innerBid)
+                    PREV_BID_WAS_OVERCALL = true
+                } else {
+                    if !PREV_BID_WAS_OVERCALL {
+                        bidding.append(BID_PASS)
+                    }
+                    let b = Bid.fromShortString(s: bid.trimmingCharacters(in: .whitespaces))
+                    bidding.append(b)
+                    PREV_BID_WAS_OVERCALL = false
+                }
             }
             if bidding.count > 0 {
                 bidding.removeLast()
