@@ -2597,7 +2597,7 @@ public struct BiddingSystem: Codable, Hashable {
             for bid in bids {
                 // if b starts with "(" and ends with ")"
                 if bid.hasPrefix("(") && bid.hasSuffix(")") {
-                    if PREV_BID_WAS_OVERCALL {
+                    if PREV_BID_WAS_OVERCALL && !bidding.isEmpty {
                         bidding.append(BID_PASS)
                     }
                     // drop prefix and suffix
@@ -2605,16 +2605,13 @@ public struct BiddingSystem: Codable, Hashable {
                     bidding.append(innerBid)
                     PREV_BID_WAS_OVERCALL = true
                 } else {
-                    if !PREV_BID_WAS_OVERCALL {
+                    if !PREV_BID_WAS_OVERCALL && !bidding.isEmpty {
                         bidding.append(BID_PASS)
                     }
                     let b = Bid.fromShortString(s: bid.trimmingCharacters(in: .whitespaces))
                     bidding.append(b)
                     PREV_BID_WAS_OVERCALL = false
                 }
-            }
-            if bidding.count > 0 {
-                bidding.removeLast()
             }
             let prioPattern = #/\[P(-?\d+)\]/#
             var prio = 0
