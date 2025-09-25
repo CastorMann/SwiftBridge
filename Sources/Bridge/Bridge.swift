@@ -219,9 +219,9 @@ public let CARD_ACE_OF_SPADES:      Card = 51
 public typealias Bidding = [Bid]
 
 public extension Bidding {
-    func getFinalContract() -> Contract? {
+    func getFinalContract(dealer: Direction = DIRECTION_NORTH) -> Contract? {
         let bid: Bid = getLastBid()
-        let declarer: Direction = getDeclarer()
+        let declarer: Direction = getDeclarer(dealer: dealer)
         let modifier: Modifier = getLastModifier()
         let contract: Contract = Contract(bid: bid, declarer: declarer, modifier: modifier)
         
@@ -264,13 +264,13 @@ public extension Bidding {
         return MODIFIER_PASSED
     }
     
-    func getDeclarer() -> Direction {
+    func getDeclarer(dealer: Direction = DIRECTION_NORTH) -> Direction {
         if let idx = self.lastIndex(where: { $0 > BID_REDOUBLE }) {
             let strain = self[idx].strain()
             for i in indices {
                 let bid = self[i]
                 if bid.strain() == strain {
-                    return 1 << (i & 3)
+                    return 1 << ((i + dealer.trailingZeroBitCount) & 3)
                 }
             }
         }
@@ -352,6 +352,22 @@ public extension Bidding {
             }
         }
         return true
+    }
+    
+    func getAvailableBids() -> Bidding {
+        var bids: Bidding = []
+        if isOver() || !isValid() {
+            return []
+        }
+        
+        
+        for bid in BIDS_ALL {
+            if (self + [bid]).isValid() {
+                bids.append(bid)
+            }
+        }
+        
+        return bids
     }
 }
 
@@ -802,9 +818,9 @@ public extension Bid {
     @available(iOS 16.0, *)
     static func fromShortString(s: String) -> Bid {
         switch s {
-        case "P": return BID_PASS
-        case "X": return BID_DOUBLE
-        case "XX": return BID_REDOUBLE
+        case "P", "p": return BID_PASS
+        case "X", "x", "D", "d": return BID_DOUBLE
+        case "XX", "xx", "R", "r", "RD", "rd": return BID_REDOUBLE
             
         case "1C": return BID_1_CLUBS
         case "1D": return BID_1_DIAMONDS
@@ -1680,6 +1696,38 @@ public extension [DealState] {
 }
 
 public extension ExtendedDealState {
+    @available(macOS 13.0, *)
+    static func parseLIN(_ lin: String) -> ExtendedDealState {
+        var edx: ExtendedDealState = .init()
+        
+        if let match = lin.firstMatch(of: #/pn\|([^\|,]*),([^\|,]*),([^\|,]*),([^\|,]*)\|/#) {
+            edx.meta["PlayerSouth"] = String(match.output.1)
+            edx.meta["PlayerWest"] = String(match.output.2)
+            edx.meta["PlayerNorth"] = String(match.output.3)
+            edx.meta["PlayerEast"] = String(match.output.4)
+        }
+        
+        if let match = lin.firstMatch(of: #/md\|[1-4]S([2-9TJQKA]*)H([2-9TJQKA]*)D([2-9TJQKA]*)C([2-9TJQKA]*),S([2-9TJQKA]*)H([2-9TJQKA]*)D([2-9TJQKA]*)C([2-9TJQKA]*),S([2-9TJQKA]*)H([2-9TJQKA]*)D([2-9TJQKA]*)C([2-9TJQKA]*),S([2-9TJQKA]*)H([2-9TJQKA]*)D([2-9TJQKA]*)C([2-9TJQKA]*)\|/#) {
+            edx.state.deal = Deal.parse(pbn: "\(match.output.9).\(match.output.10).\(match.output.11).\(match.output.12) \(match.output.13).\(match.output.14).\(match.output.15).\(match.output.16) \(match.output.1).\(match.output.2).\(match.output.3).\(match.output.4) \(match.output.5).\(match.output.6).\(match.output.7).\(match.output.8)")
+        }
+        
+        if let match = lin.firstMatch(of: #/ah\|Board (\d+)\|/#) {
+            edx.state.dealNumber = UInt8(Int(match.output.1) ?? 0)
+        }
+        
+        for match in lin.matches(of: #/pc\|([SHDC])([2-9TJQKA])\|/#) {
+            let card: Card = Card(Holding.fromShortString("\(match.output.2)\(match.output.1)").trailingZeroBitCount)
+            edx.state.play.append(card)
+        }
+        
+        for match in lin.matches(of: #/mb\|([1-7][SHDCN]|[pPdDrR])!?\|/#) {
+            let bid = Bid.fromShortString(s: String(match.output.1))
+            edx.state.bidding.append(bid)
+        }
+        
+        return edx
+    }
+    
     func toBytes() -> [UInt8] {
         var bytes: [UInt8] = []
         
@@ -1867,7 +1915,7 @@ public extension ConstraintCollection {
 public class Dealer {
     static let REGEX_BINARY_OPERATOR = #/(hcp|spades|hearts|diamonds|clubs|\d+)\s*(<|>|=|>=|<=)\s*(hcp|spades|hearts|diamonds|clubs|\d+)/#
     static let REGEX_SHAPE = #/shape\s*([\dx])([\dx])([\dx])([\dx])/#
-    static let REGEX_SHAPE_ANY = #/shape any\s*([\dx])([\dx])([\dx])([\dx])/#
+    static let REGEX_SHAPE_ANY = #/shape any\s*([\dx][SsHhDdCc]?)([\dx][SsHhDdCc]?)([\dx])([\dx])/#
     static let REGEX_BALANCED = #/\sbal|\sbalanced/#
     static let REGEX_UNBALANCED = #/unbal|unbalanced/#
     static let REGEX_RANGE = #/(\d+)-(\d+)\s+(hcp|spades|hearts|diamonds|clubs)/#
@@ -1924,7 +1972,7 @@ public class Dealer {
     }
     
     public static func deal(constraints: ConstraintCollection) -> Deal {
-        return deal(count: 1, constraints: constraints)[0]
+        return deal(count: 1, constraints: constraints).first ?? Deal()
     }
     
     public static func getArgf(_ arg: Substring) -> (Holding) -> Int {
@@ -2022,7 +2070,25 @@ public class Dealer {
                 for e in shape {
                     fmap[e, default: 0] += 1
                 }
-                let hshape: [Int] = [h.spades().nonzeroBitCount, h.hearts().nonzeroBitCount, h.diamonds().nonzeroBitCount, h.clubs().nonzeroBitCount]
+                var hshape: [Int] = [h.spades().nonzeroBitCount, h.hearts().nonzeroBitCount, h.diamonds().nonzeroBitCount, h.clubs().nonzeroBitCount]
+                
+                let suits: String = "shdc"
+                var removeIndices: [Int] = []
+                for arg in [result.output.1, result.output.2] {
+                    if let fixedSuitLength = Int(String(arg.first!)), let index = suits.firstIndex(of: Character(arg.last!.lowercased())) {
+                        let distance = suits.distance(from: suits.startIndex, to: index)
+                        let v = hshape[distance]
+                        if fixedSuitLength != v {
+                            return false
+                        }
+                        removeIndices.append(distance)
+                    }
+                }
+                for index in removeIndices.sorted(by: >) {
+                    hshape.remove(at: index)
+                }
+                
+                
                 for element in hshape {
                     if let count = fmap[element] {
                         fmap[element] = count - 1
@@ -2460,10 +2526,24 @@ public struct BiddingSystem: Codable, Hashable {
         return nil
     }
     
-    public func getBidding(deal: Deal, defaultDefinition: Definition = .init()) -> [(Bid, Definition)] {
+    public func getBidding(bidding: Bidding, defaultDefinition: Definition = .init()) -> [(Bid, Definition)] {
+        var bids: [(Bid, Definition)] = []
+        var currentBidding: Bidding = []
+        for bid in bidding {
+            currentBidding.append(bid)
+            if let def = getDefinition(currentBidding) {
+                bids.append((bid, def))
+            } else {
+                bids.append((bid, defaultDefinition))
+            }
+        }
+        return bids
+    }
+    
+    public func getBidding(deal: Deal, dealer: Direction = DIRECTION_NORTH, defaultDefinition: Definition = .init()) -> [(Bid, Definition)] {
         var bidding: Bidding = []
         var defs: [(Bid, Definition)] = []
-        var dir = DIRECTION_NORTH
+        var dir = dealer
         while !bidding.isOver() {
             if let bid: Bid = getBid(holding: deal.getHolding(dir: dir), sequence: bidding) {
                 bidding.append(bid)
