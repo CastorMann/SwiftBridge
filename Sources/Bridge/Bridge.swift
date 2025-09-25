@@ -1114,6 +1114,7 @@ public struct DealState : Codable, Hashable {
     }
 }
 
+@available(iOS 16.0, *)
 public struct ExtendedDealState : Codable, Hashable {
     public var state: DealState
     public var meta: Dictionary<String, String>
@@ -1695,6 +1696,7 @@ public extension [DealState] {
     }
 }
 
+@available(iOS 16.0, *)
 public extension ExtendedDealState {
     @available(macOS 13.0, *)
     static func parseLIN(_ lin: String) -> ExtendedDealState {
