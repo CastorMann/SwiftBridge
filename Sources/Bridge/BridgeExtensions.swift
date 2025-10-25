@@ -233,6 +233,10 @@ public extension Card {
     func cardGetRankString() -> String {
         return ranks[Int(self % 13)]
     }
+    
+    func cardToShortString() -> String {
+        return "\(cardGetStrain().strainToShortString())\(cardGetRankString())"
+    }
 }
 
 public extension Direction {
@@ -358,6 +362,10 @@ public extension Holding {
             }
         }
         return cards
+    }
+    
+    func holdingToCard() -> Card {
+        return Card(self.trailingZeroBitCount)
     }
     
     func toPBN(includeDots: Bool = true) -> String {

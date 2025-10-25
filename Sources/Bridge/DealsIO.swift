@@ -15,7 +15,7 @@ public enum ExportFormat {
 public extension Array where Element == Deal {
     static func importFromFile(_ url: URL, _ format: ExportFormat? = nil) throws -> [Deal] {
         var deals: [Deal] = []
-        
+        print(url)
         switch format {
         case .PBN:
             try deals = self.importPBN(url)
@@ -25,7 +25,7 @@ public extension Array where Element == Deal {
             try deals = self.importBIN(url)
         case .JSON:
             try deals = self.importJSON(url)
-        case .none:
+        case nil:
             switch url.pathExtension.lowercased() {
             case "pbn":
                 try deals = self.importFromFile(url, .PBN)
@@ -64,7 +64,7 @@ public extension Array where Element == Deal {
     
     static func importPBN(_ url: URL) throws -> [Deal] {
         var deals: [Deal] = []
-        
+        print("importing pbn")
         do {
             let contents = try String(contentsOf: url, encoding: .utf8)
             let lines = contents.components(separatedBy: .newlines)
@@ -73,6 +73,8 @@ public extension Array where Element == Deal {
                     let deal = Deal.parse(pbn: match.2.description, format: match.1.description)
                     deals.append(deal)
                     print(deal.toPBN())
+                } else {
+                    print("no match for line \(line)")
                 }
             }
         } catch {
@@ -116,7 +118,8 @@ public extension Array where Element == Deal {
         
         while readPointer + 32 <= readEnd {
             do {
-                let deal: Deal = try Deal.from(bytes: Array(bytes[readPointer..<readPointer+32]))
+                let bs: [UInt8] = Swift.Array<UInt8>(bytes[readPointer..<readPointer+32])
+                let deal: Deal = try Deal.from(bytes: bs)
                 readPointer += 32
                 
                 deals.append(deal)
@@ -197,3 +200,4 @@ public extension Array where Element == Deal {
         }
     }
 }
+
