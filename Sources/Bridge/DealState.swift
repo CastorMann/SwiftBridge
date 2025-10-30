@@ -379,23 +379,36 @@ public extension ExtendedDealState {
             edx.meta["PlayerEast"] = String(match.output.4)
         }
         
-        if let match = lin.firstMatch(of: #/md\|[1-4]S([2-9TJQKA]*)H([2-9TJQKA]*)D([2-9TJQKA]*)C([2-9TJQKA]*),S([2-9TJQKA]*)H([2-9TJQKA]*)D([2-9TJQKA]*)C([2-9TJQKA]*),S([2-9TJQKA]*)H([2-9TJQKA]*)D([2-9TJQKA]*)C([2-9TJQKA]*),S([2-9TJQKA]*)H([2-9TJQKA]*)D([2-9TJQKA]*)C([2-9TJQKA]*)\|/#) {
+        if let match = lin.firstMatch(of: #/(?i)md\|[1-4]S([2-9TJQKA]*)H([2-9TJQKA]*)D([2-9TJQKA]*)C([2-9TJQKA]*),S([2-9TJQKA]*)H([2-9TJQKA]*)D([2-9TJQKA]*)C([2-9TJQKA]*),S([2-9TJQKA]*)H([2-9TJQKA]*)D([2-9TJQKA]*)C([2-9TJQKA]*),S([2-9TJQKA]*)H([2-9TJQKA]*)D([2-9TJQKA]*)C([2-9TJQKA]*)\|/#) {
             edx.state.deal = Deal.parse(pbn: "\(match.output.9).\(match.output.10).\(match.output.11).\(match.output.12) \(match.output.13).\(match.output.14).\(match.output.15).\(match.output.16) \(match.output.1).\(match.output.2).\(match.output.3).\(match.output.4) \(match.output.5).\(match.output.6).\(match.output.7).\(match.output.8)")
+        } else if let match = lin.firstMatch(of: #/(?i)md\|[1-4]S([2-9TJQKA]*)H([2-9TJQKA]*)D([2-9TJQKA]*)C([2-9TJQKA]*),S([2-9TJQKA]*)H([2-9TJQKA]*)D([2-9TJQKA]*)C([2-9TJQKA]*),S([2-9TJQKA]*)H([2-9TJQKA]*)D([2-9TJQKA]*)C([2-9TJQKA]*)\|/#) {
+            if let deal = Dealer.deal(predeal: Deal.parse(pbn: "\(match.output.9).\(match.output.10).\(match.output.11).\(match.output.12) ... \(match.output.1).\(match.output.2).\(match.output.3).\(match.output.4) \(match.output.5).\(match.output.6).\(match.output.7).\(match.output.8)")).first {
+                edx.state.deal = deal
+            } else {
+                print("Could not read deal from: \(lin)")
+            }
         }
         
         if let match = lin.firstMatch(of: #/ah\|Board (\d+)\|/#) {
             edx.state.dealNumber = UInt8(Int(match.output.1) ?? 0)
         }
         
-        for match in lin.matches(of: #/pc\|([SHDC])([2-9TJQKA])\|/#) {
+        for match in lin.matches(of: #/(?i)pc\|([SHDC])([2-9TJQKA])\|/#) {
             let card: Card = Card(Holding.fromShortString("\(match.output.2)\(match.output.1)").trailingZeroBitCount)
             edx.state.play.append(card)
         }
         
-        for match in lin.matches(of: #/mb\|([1-7][SHDCN]|[pPdDrR])!?\|/#) {
+        for match in lin.matches(of: #/(?i)mb\|([1-7][SHDCN]|[pPdDrR])!?\|/#) {
             let bid = Bid.fromShortString(s: String(match.output.1))
             edx.state.bidding.append(bid)
         }
+        
+        var textDescription: String = ""
+        for match in lin.matches(of: #/(at|nt)\|([^\|]*)\|/#) {
+            textDescription += match.output.2 ?? ""
+        }
+        textDescription.replacingOccurrences(of: "&#10;", with: "\n")
+        edx.meta["latex"] = textDescription
         
         return edx
     }
@@ -614,3 +627,4 @@ public extension [ExtendedDealState] {
         return estates
     }
 }
+
