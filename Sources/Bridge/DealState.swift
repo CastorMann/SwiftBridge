@@ -394,20 +394,20 @@ public extension ExtendedDealState {
         }
         
         for match in lin.matches(of: #/(?i)pc\|([SHDC])([2-9TJQKA])\|/#) {
-            let card: Card = Card(Holding.fromShortString("\(match.output.2)\(match.output.1)").trailingZeroBitCount)
+            let card: Card = Card(Holding.fromShortString("\(match.output.2.uppercased())\(match.output.1.uppercased())").trailingZeroBitCount)
             edx.state.play.append(card)
         }
         
         for match in lin.matches(of: #/(?i)mb\|([1-7][SHDCN]|[pPdDrR])!?\|/#) {
-            let bid = Bid.fromShortString(s: String(match.output.1))
+            let bid = Bid.fromShortString(s: String(match.output.1.uppercased()))
             edx.state.bidding.append(bid)
         }
         
         var textDescription: String = ""
         for match in lin.matches(of: #/(at|nt)\|([^\|]*)\|/#) {
-            textDescription += match.output.2 ?? ""
+            textDescription += match.output.2
         }
-        textDescription.replacingOccurrences(of: "&#10;", with: "\n")
+        textDescription = textDescription.replacingOccurrences(of: "&#10;", with: "\n")
         edx.meta["latex"] = textDescription
         
         return edx
