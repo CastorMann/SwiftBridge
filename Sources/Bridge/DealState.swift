@@ -391,6 +391,26 @@ public extension ExtendedDealState {
         
         if let match = lin.firstMatch(of: #/ah\|Board (\d+)\|/#) {
             edx.state.dealNumber = UInt8(Int(match.output.1) ?? 0)
+        } else if let match = lin.firstMatch(of: #/md\|([1-4])/#) {
+            var vul = DIRECTION_NONE
+            var dealer = DIRECTION_NORTH
+            switch match.output.1.description {
+            case "1": dealer = DIRECTION_SOUTH
+            case "2": dealer = DIRECTION_WEST
+            case "3": dealer = DIRECTION_NORTH
+            case "4": dealer = DIRECTION_EAST
+            default: break
+            }
+            if let vm = lin.firstMatch(of: #/sv\|([0bne])/#) {
+                switch vm.output.1.description {
+                case "0": vul = DIRECTION_NONE
+                case "b": vul = DIRECTION_ALL
+                case "n": vul = DIRECTION_NORTH_SOUTH
+                case "e": vul = DIRECTION_EAST_WEST
+                default: break
+                }
+            }
+            edx.state.dealNumber = UInt8(dealNumberFromDealerAndVulnerability(dealer: dealer, vul: vul))
         }
         
         for match in lin.matches(of: #/(?i)pc\|([SHDC])([2-9TJQKA])\|/#) {
