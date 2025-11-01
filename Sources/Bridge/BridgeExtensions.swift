@@ -54,7 +54,7 @@ public extension Bidding {
             let strain = self[idx].strain()
             for i in indices {
                 let bid = self[i]
-                if bid.strain() == strain {
+                if bid > BID_REDOUBLE && bid.strain() == strain {
                     return 1 << ((i + dealer.trailingZeroBitCount) & 3)
                 }
             }
