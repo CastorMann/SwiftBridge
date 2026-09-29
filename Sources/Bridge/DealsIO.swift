@@ -73,6 +73,11 @@ public extension Array where Element == Deal {
                     let deal = Deal.parse(pbn: match.2.description, format: match.1.description)
                     deals.append(deal)
                     print(deal.toPBN())
+                } else if let match = line.trimmingCharacters(in: .whitespaces).wholeMatch(of: #/([NESW]):([23456789TJQKA\s\.]+)/#) {
+                    // Simplified format: a bare deal line without the [Deal "..."] wrapper
+                    let deal = Deal.parse(pbn: match.2.description, format: match.1.description)
+                    deals.append(deal)
+                    print(deal.toPBN())
                 } else {
                     print("no match for line \(line)")
                 }
