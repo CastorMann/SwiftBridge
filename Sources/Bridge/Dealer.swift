@@ -124,8 +124,12 @@ public class Dealer {
         return deals
     }
     
+    public static func deal(count: Int = 1, predeal: String, constraints: ConstraintCollection) -> [Deal] {
+        return deal(count: count, predeal: Deal.parse(pbn: predeal), constraints: constraints)
+    }
+    
     public static func deal(constraints: ConstraintCollection) -> Deal {
-        return deal(count: 1, constraints: constraints).first ?? Deal()
+        return deal(count: 1, predeal: "... ... ... ...", constraints: constraints).first ?? Deal()
     }
     
     public static func getArgf(_ arg: Substring) -> (Holding) -> Int {
